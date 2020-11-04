@@ -26,6 +26,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -85,6 +86,49 @@ func BindJSON(c *gin.Context, obj interface{}) error {
 		return err
 	}
 	return nil
+}
+
+// GetAuthorizedHeader function
+func GetAuthorizedHeader(r *http.Request) http.Header {
+	// X-Token-Issuer,X-Token-Issued-At,X-Token-Expired-At,X-Token-Audience,X-Token-Credential,X-Token-Subject,Authorization,Authorization-Source
+	header := http.Header{}
+	if v := r.Header.Get("X-Token-Audience"); v != "" {
+		header.Set("X-Token-Audience", v)
+
+		if v := r.Header.Get("X-Token-Issuer"); v != "" {
+			header.Set("X-Token-Issuer", v)
+		}
+		if v := r.Header.Get("X-Token-Issued-At"); v != "" {
+			header.Set("X-Token-Issued-At", v)
+		}
+		if v := r.Header.Get("X-Token-Expired-At"); v != "" {
+			header.Set("X-Token-Expired-At", v)
+		}
+		if v := r.Header.Get("X-Token-Credential"); v != "" {
+			header.Set("X-Token-Credential", v)
+		}
+		if v := r.Header.Get("X-Token-Subject"); v != "" {
+			header.Set("X-Token-Subject", v)
+		}
+		if v := r.Header.Get("Authorization"); v != "" {
+			header.Set("Authorization", v)
+		}
+		if v := r.Header.Get("Authorization-Source"); v != "" {
+			header.Set("Authorization-Source", v)
+		}
+
+		return header
+	}
+
+	if v := r.Header.Get("Authorization"); v != "" {
+		header.Set("Authorization", v)
+
+		if v := r.Header.Get("Authorization-Source"); v != "" {
+			header.Set("Authorization-Source", v)
+		}
+	}
+
+	return header
 }
 
 // AuthenticatedHeader function
