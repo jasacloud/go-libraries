@@ -117,12 +117,13 @@ type Params struct {
 
 // Error struct
 type Error struct {
-	Level          string `json:"level,omitempty" bson:"level,omitempty"`
-	Code           string `json:"code" bson:"code" binding:"required"`
-	Type           string `json:"type,omitempty" bson:"type,omitempty"`
-	Status         string `json:"status,omitempty" bson:"status,omitempty"`
-	Message        string `json:"message,omitempty" bson:"message,omitempty"`
-	MessageDetails string `json:"message_details,omitempty" bson:"message_details,omitempty"`
+	Level          string      `json:"level,omitempty" bson:"level,omitempty"`
+	Code           string      `json:"code" bson:"code" binding:"required"`
+	Type           string      `json:"type,omitempty" bson:"type,omitempty"`
+	Status         string      `json:"status,omitempty" bson:"status,omitempty"`
+	Message        string      `json:"message,omitempty" bson:"message,omitempty"`
+	MessageDetails string      `json:"message_details,omitempty" bson:"message_details,omitempty"`
+	Refs           interface{} `json:"refs,omitempty" bson:"refs,omitempty"`
 }
 
 // IError struct

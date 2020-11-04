@@ -185,6 +185,13 @@ func (h *Http) SetHeader(name string, value string) {
 	h.Request.Header.Set(name, value)
 }
 
+// SetHttpHeaders method
+func (h *Http) SetHttpHeaders(headers http.Header) {
+	for i, _ := range headers {
+		h.Request.Header.Set(i, headers.Get(i))
+	}
+}
+
 // SetBasicAuthorization method
 func (h *Http) SetBasicAuthorization(username, password string) {
 
