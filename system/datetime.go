@@ -14,6 +14,7 @@
 package system
 
 import (
+	"math"
 	"strconv"
 	"time"
 )
@@ -74,14 +75,51 @@ func GetCurDateTimeZAdd(unit AddDateUnitName, value int) string {
 	return time.Now().UTC().Format(UTCDateLayout)
 }
 
-// GetTimeStamp function
-func GetTimeStamp() int64 {
-
-	return time.Now().UnixNano() / int64(time.Millisecond)
+// GetTimeStamp function return milliseconds int64
+func GetTimeStamp(ts ...time.Time) int64 {
+	t := time.Now()
+	if len(ts) > 0 {
+		t = ts[0]
+	}
+	return t.UnixNano() / int64(time.Millisecond)
 }
 
-// GetTimeStampString function
-func GetTimeStampString() string {
+// GetTimeStampString function return milliseconds string
+func GetTimeStampString(ts ...time.Time) string {
+	t := time.Now()
+	if len(ts) > 0 {
+		t = ts[0]
+	}
+	return strconv.FormatInt(t.UnixNano()/int64(time.Millisecond), 10)
+}
 
-	return strconv.FormatInt(time.Now().UnixNano()/int64(time.Millisecond), 10)
+// GetTimeFromUnixString function parameter is milliseconds string
+func GetTimeFromUnixString(unixTime string) (time.Time, error) {
+	i, err := strconv.ParseInt(unixTime, 10, 64)
+	if err != nil {
+		return time.Time{}, err
+	}
+	a := float64(i) / 1000
+	b := float64(i / 1000)
+	nsec := ToFixed(a-b, 3) * 1000000000
+	return time.Unix(i/1000, int64(nsec)), nil
+}
+
+// GetTimeFromUnix function parameter is milliseconds int64
+func GetTimeFromUnix(unixTime int64) time.Time {
+	a := float64(unixTime) / 1000
+	b := float64(unixTime / 1000)
+	nsec := ToFixed(a-b, 3) * 1000000000
+	return time.Unix(unixTime/1000, int64(nsec))
+}
+
+// Round function
+func Round(num float64) int {
+	return int(num + math.Copysign(0.5, num))
+}
+
+// ToFixed function
+func ToFixed(num float64, precision int) float64 {
+	output := math.Pow(10, float64(precision))
+	return float64(Round(num*output)) / output
 }
