@@ -238,13 +238,22 @@ func (mailer *Mailer) SendWithAttachments(to string, cc string, subject string, 
 			if name == "" {
 				name = "attachment"
 			}
+			if attachment.Name != "" {
+				name = attachment.Name
+
+			}
 			ext, err := mime.ExtensionsByType(resp.Header.Get("Content-Type"))
 			if err != nil {
 				log.Println(err)
 				return nil
 			}
 			if len(ext) > 0 {
-				name = strings.TrimSuffix(name, filepath.Ext(name)) + ext[0]
+				cExt := strings.ToLower(ext[0])
+				if extName := strings.ToLower(filepath.Ext(name)); extName != "" && extName == cExt {
+					name = strings.TrimSuffix(name, filepath.Ext(name)) + cExt
+				} else {
+					name = name + cExt
+				}
 			}
 
 			var f = func(r io.ReadCloser) func(w io.Writer) error {
