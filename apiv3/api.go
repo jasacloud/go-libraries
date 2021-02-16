@@ -662,6 +662,11 @@ func (a *Attributes) Get(key string) interface{} {
 	return o[key]
 }
 
+// GetSubAttributes method
+func (a *Attributes) GetSubAttributes(key string) (*Attributes, error) {
+	return NewAttributes(a.Get(key))
+}
+
 // GetArrayInterface method
 func (a *Attributes) GetArrayInterface(key string) []interface{} {
 	if arr := a.Get(key); arr != nil {
