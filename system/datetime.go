@@ -14,6 +14,7 @@
 package system
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 	"time"
@@ -54,25 +55,43 @@ func ParseDateTimeZ(value string) (time.Time, error) {
 	return time.Parse(UTCDateLayout, value)
 }
 
+// GetDateTimeAdd function
+func GetDateTimeAdd(t time.Time, unit AddDateUnitName, value int) (time.Time, error) {
+	switch unit {
+	case AddYears:
+		return t.AddDate(value, 0, 0), nil
+	case AddMonths:
+		return t.AddDate(0, value, 0), nil
+	case AddDays:
+		return t.AddDate(0, 0, value), nil
+	case AddHours:
+		return t.Add(time.Duration(value) * time.Hour), nil
+	case AddMinutes:
+		return t.Add(time.Duration(value) * time.Minute), nil
+	case AddSeconds:
+		return t.Add(time.Duration(value) * time.Second), nil
+	default:
+		return time.Time{}, fmt.Errorf("invalid time unit for: %v", unit)
+	}
+}
+
 // GetCurDateTimeZAdd function
 func GetCurDateTimeZAdd(unit AddDateUnitName, value int) string {
 	t := time.Now()
-	switch unit {
-	case AddYears:
-		return t.AddDate(value, 0, 0).UTC().Format(UTCDateLayout)
-	case AddMonths:
-		return t.AddDate(0, value, 0).UTC().Format(UTCDateLayout)
-	case AddDays:
-		return t.AddDate(0, 0, value).UTC().Format(UTCDateLayout)
-	case AddHours:
-		return t.Add(time.Duration(value) * time.Hour).UTC().Format(UTCDateLayout)
-	case AddMinutes:
-		return t.Add(time.Duration(value) * time.Minute).UTC().Format(UTCDateLayout)
-	case AddSeconds:
-		return t.Add(time.Duration(value) * time.Second).UTC().Format(UTCDateLayout)
-	default:
+	result, err := GetDateTimeAdd(t, unit, value)
+	if err != nil {
+		return t.UTC().Format(UTCDateLayout)
 	}
-	return time.Now().UTC().Format(UTCDateLayout)
+	return result.UTC().Format(UTCDateLayout)
+}
+
+// GetDateTimeZAdd function
+func GetDateTimeZAdd(t time.Time, unit AddDateUnitName, value int) (string, error) {
+	t, err := GetDateTimeAdd(t, unit, value)
+	if err != nil {
+		return "", err
+	}
+	return t.UTC().Format(UTCDateLayout), nil
 }
 
 // GetTimeStamp function return milliseconds int64
