@@ -47,12 +47,13 @@ type DBResources struct {
 // Connections struct
 type Connections struct {
 	sync.RWMutex
-	Client     *mongo.Client
-	Database   *mongo.Database
-	Collection *mongo.Collection
-	Indexed    bool
-	Option     *Resource
-	URI        string
+	Client             *mongo.Client
+	Database           *mongo.Database
+	Collection         *mongo.Collection
+	Indexed            bool
+	IndexedCollections map[string]bool
+	Option             *Resource
+	URI                string
 }
 
 // Index struct
