@@ -179,9 +179,10 @@ func connectURI(uri string) (*Connections, error) {
 	collection := database.Collection(databaseName)
 
 	return &Connections{
-		Client:     client,
-		Database:   database,
-		Collection: collection,
+		Client:             client,
+		Database:           database,
+		Collection:         collection,
+		IndexedCollections: make(map[string]bool),
 	}, nil
 }
 
