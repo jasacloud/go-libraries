@@ -47,13 +47,11 @@ type DBResources struct {
 // Connections struct
 type Connections struct {
 	sync.RWMutex
-	Client             *mongo.Client
-	Database           *mongo.Database
-	Collection         *mongo.Collection
-	Indexed            bool
-	IndexedCollections map[string]bool
-	Option             *Resource
-	URI                string
+	Client     *mongo.Client
+	Database   *mongo.Database
+	Collection *mongo.Collection
+	Option     *Resource
+	URI        string
 }
 
 // Index struct
@@ -179,10 +177,9 @@ func connectURI(uri string) (*Connections, error) {
 	collection := database.Collection(databaseName)
 
 	return &Connections{
-		Client:             client,
-		Database:           database,
-		Collection:         collection,
-		IndexedCollections: make(map[string]bool),
+		Client:     client,
+		Database:   database,
+		Collection: collection,
 	}, nil
 }
 
@@ -298,61 +295,6 @@ func (c *Connections) C(name string) {
 	c.Collection = c.Database.Collection(name)
 }
 
-// TestFind method
-func (c *Connections) TestFind() {
-	cur, err := c.Collection.Find(context.TODO(), bson.D{})
-
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	var results []interface{}
-	for cur.Next(context.TODO()) {
-
-		// create a value into which the single document can be decoded
-		var elem map[string]interface{}
-		err := cur.Decode(&elem)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-
-		results = append(results, elem)
-	}
-
-	if err := cur.Err(); err != nil {
-		log.Println(err)
-		return
-	}
-
-	// Close the cursor once finished
-	err = cur.Close(context.TODO())
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	log.Println(results)
-}
-
-// TestInsert method
-func (c *Connections) TestInsert() {
-	var ctx = context.Background()
-	var doc = bson.M{"id": "1234", "hometown": "Atlanta"}
-	var result *mongo.InsertOneResult
-	//c.C("test")
-	result, err := c.Collection.InsertOne(ctx, doc)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	if result.InsertedID != doc["_id"] {
-		log.Println(result.InsertedID)
-		log.Println(doc["id"])
-	}
-}
-
 // CheckConnection method
 func (c *Connections) CheckConnection() error {
 	command := bson.D{{Key: "ping", Value: 1}}
@@ -367,104 +309,33 @@ func (c *Connections) CheckConnection() error {
 }
 
 // EnsureIndex method
-func (c *Connections) EnsureIndex(index mongo.IndexModel) error {
-	if !c.Indexed {
-		name, err := c.Collection.Indexes().CreateOne(context.Background(), index)
-		log.Println("EnsureIndexes::created:", name)
-		c.Lock()
-		c.Indexed = true
-		c.Unlock()
-		return err
-	}
+func (c *Connections) EnsureIndex(index mongo.IndexModel) (string, error) {
 
-	return nil
+	return c.Collection.Indexes().CreateOne(context.Background(), index)
 }
 
 // EnsureIndexes method
-func (c *Connections) EnsureIndexes(indexes ...mongo.IndexModel) error {
-	if !c.Indexed {
-		name, err := c.Collection.Indexes().CreateMany(context.Background(), indexes)
-		log.Println("EnsureIndexes::created:", name)
-		c.Lock()
-		c.Indexed = true
-		c.Unlock()
-		return err
-	}
+func (c *Connections) EnsureIndexes(indexes ...mongo.IndexModel) ([]string, error) {
 
-	return nil
-}
-
-// EnsureIndexesTest method
-func (c *Connections) EnsureIndexesTest() error {
-	indexKeys := bsonx.Doc{
-		{Key: "id", Value: bsonx.Int32(int32(1))},
-	}
-	indexOptions := options.Index()
-	indexOptions.SetUnique(true)
-	indexOptions.SetBackground(true)
-	indexOptions.SetSparse(true)
-
-	index := mongo.IndexModel{}
-	index.Keys = indexKeys
-	index.Options = indexOptions
-
-	indexKeys2 := bsonx.Doc{
-		{Key: "name", Value: bsonx.Int32(int32(1))},
-		{Key: "type", Value: bsonx.Int32(int32(1))},
-		{Key: "parent", Value: bsonx.Int32(int32(1))},
-	}
-	indexOptions2 := options.Index()
-	indexOptions2.SetUnique(true)
-	indexOptions2.SetBackground(true)
-	indexOptions2.SetSparse(true)
-
-	index2 := mongo.IndexModel{}
-	index2.Keys = indexKeys2
-	index2.Options = indexOptions2
-
-	indexes := []mongo.IndexModel{index, index2}
-
-	return c.EnsureIndexes(indexes...)
+	return c.Collection.Indexes().CreateMany(context.Background(), indexes)
 }
 
 // CreateIndex method
-func (c *Connections) CreateIndex(index *Index) error {
-	if !c.Indexed {
-		name, err := c.Collection.Indexes().CreateOne(context.Background(), index.IndexModel, index.CreateIndexesOptions)
-		if err != nil {
-			log.Println("EnsureIndex::created:", name)
-		}
-		c.Lock()
-		c.Indexed = true
-		c.Unlock()
+func (c *Connections) CreateIndex(index *Index) (string, error) {
 
-		return err
-	}
-
-	return nil
+	return c.Collection.Indexes().CreateOne(context.Background(), index.IndexModel, index.CreateIndexesOptions)
 }
 
 // CreateIndexes method
-func (c *Connections) CreateIndexes(index ...*Index) error {
-	if !c.Indexed {
-		var sliceIndex []mongo.IndexModel
-		var sliceOpts []*options.CreateIndexesOptions
-		for _, v := range index {
-			sliceIndex = append(sliceIndex, v.IndexModel)
-			sliceOpts = append(sliceOpts, v.CreateIndexesOptions)
-		}
-		name, err := c.Collection.Indexes().CreateMany(context.Background(), sliceIndex, sliceOpts...)
-		if err != nil {
-			log.Println("EnsureIndexes::created:", name)
-		}
-		c.Lock()
-		c.Indexed = true
-		c.Unlock()
-
-		return err
+func (c *Connections) CreateIndexes(index ...*Index) ([]string, error) {
+	var sliceIndex []mongo.IndexModel
+	var sliceOpts []*options.CreateIndexesOptions
+	for _, v := range index {
+		sliceIndex = append(sliceIndex, v.IndexModel)
+		sliceOpts = append(sliceOpts, v.CreateIndexesOptions)
 	}
 
-	return nil
+	return c.Collection.Indexes().CreateMany(context.Background(), sliceIndex, sliceOpts...)
 }
 
 // NewIndex function
