@@ -66,6 +66,15 @@ type Attachment struct {
 	Path string `json:"path,omitempty" bson:"path,omitempty"`
 }
 
+// Embed struct
+type Embed struct {
+	Name string `json:"name,omitempty" bson:"name,omitempty"`
+	Type string `json:"type,omitempty" bson:"type,omitempty"`
+	Data string `json:"data,omitempty" bson:"data,omitempty"`
+	Url  string `json:"url,omitempty" bson:"url,omitempty"`
+	Path string `json:"path,omitempty" bson:"path,omitempty"`
+}
+
 var (
 	// Mail variable
 	Mail MailConf
@@ -192,15 +201,61 @@ func (mailer *Mailer) SendWithAttachments(to string, cc string, subject string, 
 	m.SetHeader("Mime-Version", "1.0")
 	m.SetBody(contentType, content)
 
+	mailer.m = m
+
+	// set attachments
+	if err := mailer.setAttachments(attachments...); err != nil {
+		log.Println(err)
+	}
+
+	return gomail.Send(mailer.s, mailer.m)
+}
+
+// SendWithAttachments method
+func (mailer *Mailer) SendWithAttachmentsEmbeds(to string, cc string, subject string, contentType string, content string, attachments []Attachment, embeds []Embed) error {
+	m := gomail.NewMessage(gomail.SetEncoding("base64"), gomail.SetCharset("iso-8859-1"))
+	m.SetHeader("Message-ID", getMessageId(mailer.opt.Sender))
+	m.SetHeader("To", to)
+	if cc != "" {
+		m.SetHeader("Cc", cc)
+	}
+	//m.SetHeader("From", "dwi@jasacloud.com")
+	//m.SetHeader("From", mailer.opt.Sender)
+	m.SetAddressHeader("From", mailer.opt.Sender, mailer.opt.SenderName)
+	m.SetHeader("Subject", subject)
+	m.SetHeader("X-Priority", "1")
+	m.SetHeader("X-Mailer", "GSkyMailer 1.0")
+	m.SetHeader("X-MSMail-Priority", "High")
+	m.SetHeader("Importance", "High")
+	m.SetHeader("Mime-Version", "1.0")
+	m.SetBody(contentType, content)
+
+	mailer.m = m
+
+	// set attachments
+	if err := mailer.setAttachments(attachments...); err != nil {
+		log.Println(err)
+	}
+	// set embeds
+	if err := mailer.setEmbeds(embeds...); err != nil {
+		log.Println(err)
+	}
+
+	return gomail.Send(mailer.s, mailer.m)
+}
+
+// setAttachments method
+func (mailer *Mailer) setAttachments(attachments ...Attachment) error {
 	for _, attachment := range attachments {
 		if attachment.Data != "" {
 			var f = func(a Attachment) func(w io.Writer) error {
 				return func(w io.Writer) error {
-					var dataUri = a.Data
-					log.Println("dataUri:", dataUri)
-					coI := strings.Index(dataUri, ",")
-					rawImage := dataUri[coI+1:]
-					unBased, _ := base64.StdEncoding.DecodeString(string(rawImage))
+					coI := strings.Index(a.Data, ",")
+					rawImage := a.Data[coI+1:]
+					unBased, err := base64.StdEncoding.DecodeString(string(rawImage))
+					if err != nil {
+						return err
+					}
 					res := bytes.NewReader(unBased)
 					if _, err := io.Copy(w, res); err != nil {
 						return err
@@ -220,19 +275,26 @@ func (mailer *Mailer) SendWithAttachments(to string, cc string, subject string, 
 				continue
 			}
 			if len(ext) > 0 {
-				attachment.Name = attachment.Name + ext[0]
+				attachment.Name = attachment.Name + ext[len(ext)-1]
 			}
 
-			m.Attach(attachment.Name, gomail.SetCopyFunc(f(attachment)))
+			mailer.m.Attach(attachment.Name, gomail.SetCopyFunc(f(attachment)))
 		} else if attachment.Url != "" {
-			var url = attachment.Url
-			log.Println("URL:", url)
-			cl := client.LoadHttp(url)
+			var f = func(r io.ReadCloser) func(w io.Writer) error {
+				return func(w io.Writer) error {
+					defer r.Close()
+					if _, err := io.Copy(w, r); err != nil {
+						return err
+					}
+					return nil
+				}
+			}
+			cl := client.LoadHttp(attachment.Url)
 			cl.SetRequest("GET", "", nil)
 			resp, err := cl.Start()
 			if err != nil {
 				log.Println(err)
-				return nil
+				continue
 			}
 			name := filepath.Base(attachment.Url)
 			if name == "" {
@@ -245,10 +307,10 @@ func (mailer *Mailer) SendWithAttachments(to string, cc string, subject string, 
 			ext, err := mime.ExtensionsByType(resp.Header.Get("Content-Type"))
 			if err != nil {
 				log.Println(err)
-				return nil
+				continue
 			}
 			if len(ext) > 0 {
-				cExt := strings.ToLower(ext[0])
+				cExt := strings.ToLower(ext[len(ext)-1])
 				if extName := strings.ToLower(filepath.Ext(name)); extName != "" && extName == cExt {
 					name = strings.TrimSuffix(name, filepath.Ext(name)) + cExt
 				} else {
@@ -256,6 +318,55 @@ func (mailer *Mailer) SendWithAttachments(to string, cc string, subject string, 
 				}
 			}
 
+			mailer.m.Attach(name, gomail.SetCopyFunc(f(resp.Body)))
+		} else if attachment.Path != "" {
+			mailer.m.Attach(attachment.Path)
+		}
+	}
+
+	return nil
+}
+
+// setEmbeds method
+func (mailer *Mailer) setEmbeds(embeds ...Embed) error {
+	for _, embed := range embeds {
+		if embed.Data != "" {
+			var f = func(a Embed) func(w io.Writer) error {
+				return func(w io.Writer) error {
+					log.Println("dataUri:", a.Data)
+					coI := strings.Index(a.Data, ",")
+					rawImage := a.Data[coI+1:]
+					unBased, err := base64.StdEncoding.DecodeString(rawImage)
+					if err != nil {
+						return err
+					}
+					res := bytes.NewReader(unBased)
+					if _, err := io.Copy(w, res); err != nil {
+						return err
+					}
+					return nil
+				}
+			}
+			if embed.Name == "" {
+				log.Println("error embed, required name for:", embed.Data)
+				continue
+			}
+			/*
+				embed.Name = strings.TrimSuffix(embed.Name, filepath.Ext(embed.Name))
+				coI := strings.Index(embed.Data, ",")
+				contentType := strings.TrimSuffix(embed.Data[5:coI], ";base64")
+				ext, err := mime.ExtensionsByType(contentType)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				if len(ext) > 0 {
+					embed.Name = embed.Name + ext[len(ext)-1]
+				}
+				embeds[i].Name = embed.Name
+			*/
+			mailer.m.Embed(embed.Name, gomail.SetCopyFunc(f(embed)))
+		} else if embed.Url != "" {
 			var f = func(r io.ReadCloser) func(w io.Writer) error {
 				return func(w io.Writer) error {
 					defer r.Close()
@@ -265,13 +376,41 @@ func (mailer *Mailer) SendWithAttachments(to string, cc string, subject string, 
 					return nil
 				}
 			}
-			m.Attach(name, gomail.SetCopyFunc(f(resp.Body)))
-		} else if attachment.Path != "" {
-			m.Attach(attachment.Path)
+			if embed.Name == "" {
+				log.Println("error embed, required name for:", embed.Url)
+				continue
+			}
+
+			cl := client.LoadHttp(embed.Url)
+			cl.SetRequest("GET", "", nil)
+			resp, err := cl.Start()
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			/*
+				ext, err := mime.ExtensionsByType(resp.Header.Get("Content-Type"))
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				if len(ext) > 0 {
+					cExt := strings.ToLower(ext[len(ext)-1])
+					if extName := strings.ToLower(filepath.Ext(embed.Name)); extName != "" && extName == cExt {
+						embed.Name = strings.TrimSuffix(embed.Name, filepath.Ext(embed.Name)) + cExt
+					} else {
+						embed.Name = embed.Name + cExt
+					}
+				}
+				embeds[i].Name = embed.Name
+			*/
+			mailer.m.Embed(embed.Name, gomail.SetCopyFunc(f(resp.Body)))
+		} else if embed.Path != "" {
+			mailer.m.Embed(embed.Path)
 		}
 	}
-	mailer.m = m
-	return gomail.Send(mailer.s, mailer.m)
+
+	return nil
 }
 
 // SendEmail function
