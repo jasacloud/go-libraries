@@ -21,6 +21,7 @@ import (
 	"crypto/md5"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
@@ -198,6 +199,14 @@ func TripleDesDecryptString(cryptedString, keyString string) ([]byte, error) {
 // Sha256String function
 func Sha256String(s string) string {
 	h := sha256.New()
+	h.Write([]byte(s))
+
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// Sha512String function
+func Sha512String(s string) string {
+	h := sha512.New()
 	h.Write([]byte(s))
 
 	return hex.EncodeToString(h.Sum(nil))
