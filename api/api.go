@@ -324,6 +324,11 @@ func (a Attributes) ParseKeyValSetAttributes() Attributes {
 	return nil
 }
 
+// PairTo method
+func (a *Attributes) PairTo(o interface{}) error {
+	return helper.PairValues(a, &o)
+}
+
 // ParseSubAttributes function
 func ParseSubAttributes(i, o Attributes, key *string) {
 	for i, v := range i {
