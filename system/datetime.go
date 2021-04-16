@@ -23,7 +23,19 @@ import (
 const (
 	// UTCDateLayout constant
 	UTCDateLayout = "2006-01-02T15:04:05Z07:00"
+
+	FieldLabelWIB   = "WIB"
+	WIBLocation     = "Asia/Jakarta"
+	UTCWIBOffsetSec = 25200
+
+	LangID Lang = "id"
+	LangEN Lang = "en"
 )
+
+type Lang string
+
+var DayID = []string{"Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"}
+var MonthID = []string{"Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
 
 // AddDateUnitName type
 type AddDateUnitName string
@@ -141,4 +153,40 @@ func Round(num float64) int {
 func ToFixed(num float64, precision int) float64 {
 	output := math.Pow(10, float64(precision))
 	return float64(Round(num*output)) / output
+}
+
+// DateZToWIBIDWithDay function
+// @utc should be "2020-01-23T20:00:30Z"
+// @return "Sabtu, 7 Maret 2015, 18:06 WIB"
+func DateZToWIBIDWithDay(utc string, lang Lang) string {
+	t, err := time.Parse(UTCDateLayout, utc)
+	if err != nil {
+		return ""
+	}
+	switch lang {
+	case LangID:
+		return t.In(time.FixedZone(FieldLabelWIB, UTCWIBOffsetSec)).Format(DayID[t.Weekday()] + ", 2 " + MonthID[t.Month()-1] + " 2006, 15:04 WIB")
+	case LangEN:
+		return t.In(time.FixedZone(FieldLabelWIB, UTCWIBOffsetSec)).Format("Monday, 2 January 2006, 15:04 WIB")
+	default:
+		return t.In(time.FixedZone(FieldLabelWIB, UTCWIBOffsetSec)).Format("Monday, 2 January 2006, 15:04 WIB")
+	}
+}
+
+// DateZToWIBID function
+// @utc should be "2020-01-23T20:00:30Z"
+// @return "7 Maret 2015, 18:06 WIB"
+func DateZToWIBID(utc string, lang Lang) string {
+	t, err := time.Parse(UTCDateLayout, utc)
+	if err != nil {
+		return ""
+	}
+	switch lang {
+	case LangID:
+		return t.In(time.FixedZone(FieldLabelWIB, UTCWIBOffsetSec)).Format("2 " + MonthID[t.Month()-1] + " 2006, 15:04 WIB")
+	case LangEN:
+		return t.In(time.FixedZone(FieldLabelWIB, UTCWIBOffsetSec)).Format("2 January 2006, 15:04 WIB")
+	default:
+		return t.In(time.FixedZone(FieldLabelWIB, UTCWIBOffsetSec)).Format("2 January 2006, 15:04 WIB")
+	}
 }
