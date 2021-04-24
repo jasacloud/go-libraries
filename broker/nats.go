@@ -16,7 +16,7 @@ package broker
 import (
 	"fmt"
 	"github.com/jasacloud/go-libraries/config"
-	"github.com/nats-io/go-nats"
+	"github.com/nats-io/nats.go"
 	"log"
 	"time"
 )
