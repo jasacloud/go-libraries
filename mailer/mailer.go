@@ -250,9 +250,14 @@ func (mailer *Mailer) setAttachments(attachments ...Attachment) error {
 		if attachment.Data != "" {
 			var f = func(a Attachment) func(w io.Writer) error {
 				return func(w io.Writer) error {
+					var rawImage string
 					coI := strings.Index(a.Data, ",")
-					rawImage := a.Data[coI+1:]
-					unBased, err := base64.StdEncoding.DecodeString(string(rawImage))
+					if coI < 0 {
+						rawImage = a.Data
+					} else {
+						rawImage = a.Data[coI+1:]
+					}
+					unBased, err := base64.StdEncoding.DecodeString(rawImage)
 					if err != nil {
 						return err
 					}
@@ -267,8 +272,22 @@ func (mailer *Mailer) setAttachments(attachments ...Attachment) error {
 				attachment.Name = "attachment"
 			}
 			attachment.Name = strings.TrimSuffix(attachment.Name, filepath.Ext(attachment.Name))
+			var contentType string
 			coI := strings.Index(attachment.Data, ",")
-			contentType := strings.TrimSuffix(attachment.Data[5:coI], ";base64")
+			if coI < 0 {
+				if attachment.Type != "" {
+					contentType = attachment.Type
+				} else if t := mime.TypeByExtension(filepath.Ext(attachment.Name)); t != "" {
+					contentType = t
+				} else {
+					log.Printf("unknown Content-Type of attachment %s\n", attachment.Name)
+					mailer.m.Attach(attachment.Name, gomail.SetCopyFunc(f(attachment)))
+					continue
+				}
+			} else {
+				contentType = strings.TrimSuffix(attachment.Data[5:coI], ";base64")
+			}
+
 			ext, err := mime.ExtensionsByType(contentType)
 			if err != nil {
 				log.Println(err)
@@ -333,9 +352,13 @@ func (mailer *Mailer) setEmbeds(embeds ...Embed) error {
 		if embed.Data != "" {
 			var f = func(a Embed) func(w io.Writer) error {
 				return func(w io.Writer) error {
-					log.Println("dataUri:", a.Data)
+					var rawImage string
 					coI := strings.Index(a.Data, ",")
-					rawImage := a.Data[coI+1:]
+					if coI < 0 {
+						rawImage = a.Data
+					} else {
+						rawImage = a.Data[coI+1:]
+					}
 					unBased, err := base64.StdEncoding.DecodeString(rawImage)
 					if err != nil {
 						return err
