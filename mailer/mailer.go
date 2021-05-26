@@ -268,8 +268,10 @@ func (mailer *Mailer) setAttachments(attachments ...Attachment) error {
 					return nil
 				}
 			}
+			originAttachmentName := attachment.Name
 			if attachment.Name == "" {
 				attachment.Name = "attachment"
+				originAttachmentName = "attachment"
 			}
 			attachment.Name = strings.TrimSuffix(attachment.Name, filepath.Ext(attachment.Name))
 			var contentType string
@@ -277,11 +279,11 @@ func (mailer *Mailer) setAttachments(attachments ...Attachment) error {
 			if coI < 0 {
 				if attachment.Type != "" {
 					contentType = attachment.Type
-				} else if t := mime.TypeByExtension(filepath.Ext(attachment.Name)); t != "" {
+				} else if t := mime.TypeByExtension(filepath.Ext(originAttachmentName)); t != "" {
 					contentType = t
 				} else {
-					log.Printf("unknown Content-Type of attachment %s\n", attachment.Name)
-					mailer.m.Attach(attachment.Name, gomail.SetCopyFunc(f(attachment)))
+					log.Printf("unknown Content-Type of attachment %s\n", originAttachmentName)
+					mailer.m.Attach(originAttachmentName, gomail.SetCopyFunc(f(attachment)))
 					continue
 				}
 			} else {
