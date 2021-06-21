@@ -626,14 +626,18 @@ func ParseTokenClaims(c *gin.Context) *Claims {
 			claims.Sub = claims.UserId
 		}
 	}
-
-	claims.ReArrangeValues()
+	if claims != nil {
+		claims.ReArrangeValues()
+	}
 
 	return claims
 }
 
 // ReArrangeValues function
 func (claims *Claims) ReArrangeValues() {
+	if claims == nil {
+		return
+	}
 	if claims.CredentialId == "" && claims.Cre != "" {
 		claims.CredentialId = claims.Cre
 	}
