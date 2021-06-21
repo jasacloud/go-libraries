@@ -68,6 +68,22 @@ func Base64urldecode(msg string) string {
 	return string(decoded)
 }
 
+// Base64RawURLEncode function
+func Base64RawURLEncode(msg string) string {
+
+	return base64.RawURLEncoding.EncodeToString([]byte(msg))
+}
+
+// Base64RawURLDecode function
+func Base64RawURLDecode(msg string) string {
+	decoded, err := base64.RawURLEncoding.DecodeString(msg)
+	if err != nil {
+		return ""
+	}
+
+	return string(decoded)
+}
+
 // Base64urlencodeCustom function
 func Base64urlencodeCustom(msg string) string {
 	arr := []string{}
@@ -91,6 +107,36 @@ func Base64urldecodeCustom(msg string) string {
 	msg = r.Replace(msg)
 
 	decoded, err := base64.URLEncoding.DecodeString(msg)
+	if err != nil {
+		return ""
+	}
+
+	return string(decoded)
+}
+
+// Base64RawURLEncodeCustom function
+func Base64RawURLEncodeCustom(msg string) string {
+	arr := []string{}
+	encode := base64.RawURLEncoding.EncodeToString([]byte(msg))
+	for i, v := range asccii64url {
+		arr = append(arr, string(v), string(asccii64urlcustom[i]))
+	}
+	r := strings.NewReplacer(arr...)
+	result := r.Replace(encode)
+
+	return result
+}
+
+// Base64RawURLDecodeCustom function
+func Base64RawURLDecodeCustom(msg string) string {
+	arr := []string{}
+	for i, v := range asccii64url {
+		arr = append(arr, string(asccii64urlcustom[i]), string(v))
+	}
+	r := strings.NewReplacer(arr...)
+	msg = r.Replace(msg)
+
+	decoded, err := base64.RawURLEncoding.DecodeString(msg)
 	if err != nil {
 		return ""
 	}
