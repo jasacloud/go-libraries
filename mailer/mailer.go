@@ -51,10 +51,12 @@ type MailConf struct {
 
 // Mailer struct
 type Mailer struct {
-	d   *gomail.Dialer
-	s   gomail.SendCloser
-	m   *gomail.Message
-	opt MailOption
+	d       *gomail.Dialer
+	s       gomail.SendCloser
+	m       *gomail.Message
+	enc     gomail.Encoding
+	charset string
+	opt     MailOption
 }
 
 // Attachment struct
@@ -74,6 +76,20 @@ type Embed struct {
 	Url  string `json:"url,omitempty" bson:"url,omitempty"`
 	Path string `json:"path,omitempty" bson:"path,omitempty"`
 }
+
+const (
+	// QuotedPrintable represents the quoted-printable encoding as defined in
+	// RFC 2045.
+	QuotedPrintable gomail.Encoding = "quoted-printable"
+	// Base64 represents the base64 encoding as defined in RFC 2045.
+	Base64 gomail.Encoding = "base64"
+	// Unencoded can be used to avoid encoding the body of an email. The headers
+	// will still be encoded using quoted-printable encoding.
+	Unencoded gomail.Encoding = "8bit"
+
+	// DefaultCharset email
+	DefaultCharset string = "iso-8859-1"
+)
 
 var (
 	// Mail variable
@@ -106,10 +122,10 @@ func EmailDial(resourceName string) *Mailer {
 		log.Println("Error dial email :", err)
 	}
 	return &Mailer{
-		d,
-		s,
-		nil,
-		mailOpt,
+		d:   d,
+		s:   s,
+		m:   nil,
+		opt: mailOpt,
 	}
 }
 
@@ -128,10 +144,10 @@ func SetMailOption(mailOpt MailOption) *Mailer {
 		return nil
 	}
 	return &Mailer{
-		d,
-		s,
-		nil,
-		mailOpt,
+		d:   d,
+		s:   s,
+		m:   nil,
+		opt: mailOpt,
 	}
 }
 
@@ -154,9 +170,34 @@ func getMessageId(email string) string {
 	return "<" + getHashString(system.GetUID()) + ".jc@" + domain + ">"
 }
 
+func (mailer *Mailer) SetEncoding(enc gomail.Encoding) *Mailer {
+	mailer.enc = enc
+	return mailer
+}
+
+func (mailer *Mailer) SetCharset(charset string) *Mailer {
+	mailer.charset = charset
+	return mailer
+}
+
+func (mailer *Mailer) getMessageSettings() []gomail.MessageSetting {
+	var setting []gomail.MessageSetting
+	if mailer.enc != "" {
+		setting = append(setting, gomail.SetEncoding(mailer.enc))
+	} else {
+		setting = append(setting, gomail.SetEncoding(Base64))
+	}
+	if mailer.charset != "" {
+		setting = append(setting, gomail.SetCharset(mailer.charset))
+	} else {
+		setting = append(setting, gomail.SetCharset(DefaultCharset))
+	}
+	return setting
+}
+
 // Send method
 func (mailer *Mailer) Send(to string, cc string, subject string, contentType string, content string, attachment ...string) error {
-	m := gomail.NewMessage(gomail.SetEncoding("base64"), gomail.SetCharset("iso-8859-1"))
+	m := gomail.NewMessage(mailer.getMessageSettings()...)
 	m.SetHeader("Message-ID", getMessageId(mailer.opt.Sender))
 	m.SetHeader("To", to)
 	if cc != "" {
@@ -184,7 +225,7 @@ func (mailer *Mailer) Send(to string, cc string, subject string, contentType str
 
 // SendWithAttachments method
 func (mailer *Mailer) SendWithAttachments(to string, cc string, subject string, contentType string, content string, attachments ...Attachment) error {
-	m := gomail.NewMessage(gomail.SetEncoding("base64"), gomail.SetCharset("iso-8859-1"))
+	m := gomail.NewMessage(mailer.getMessageSettings()...)
 	m.SetHeader("Message-ID", getMessageId(mailer.opt.Sender))
 	m.SetHeader("To", to)
 	if cc != "" {
@@ -213,7 +254,7 @@ func (mailer *Mailer) SendWithAttachments(to string, cc string, subject string, 
 
 // SendWithAttachments method
 func (mailer *Mailer) SendWithAttachmentsEmbeds(to string, cc string, subject string, contentType string, content string, attachments []Attachment, embeds []Embed) error {
-	m := gomail.NewMessage(gomail.SetEncoding("base64"), gomail.SetCharset("iso-8859-1"))
+	m := gomail.NewMessage(mailer.getMessageSettings()...)
 	m.SetHeader("Message-ID", getMessageId(mailer.opt.Sender))
 	m.SetHeader("To", to)
 	if cc != "" {
