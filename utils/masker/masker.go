@@ -335,6 +335,9 @@ func (m *Masker) Email(i string) string {
 	}
 
 	tmp := strings.Split(i, "@")
+	if len(tmp) < 1 {
+		return i
+	}
 	addr := tmp[0]
 	domain := tmp[1]
 
