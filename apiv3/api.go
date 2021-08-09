@@ -55,6 +55,25 @@ type RangeValue struct {
 	Lte interface{} `json:"lte" bson:"lte"`
 }
 
+// Geometry with standard GeoJSON
+type Geometry struct {
+	Type        string     `json:"type,omitempty" bson:"type,omitempty"`
+	Coordinates [2]float64 `json:"coordinates,omitempty" bson:"coordinates,omitempty"`
+}
+
+// NearValue struct
+type NearValue struct {
+	Geometry    *Geometry `json:"geometry,omitempty" bson:"geometry,omitempty"`
+	MinDistance float64   `json:"min_distance,omitempty" bson:"min_distance,omitempty"`
+	MaxDistance float64   `json:"max_distance,omitempty" bson:"max_distance,omitempty"`
+}
+
+// Near struct
+type Near struct {
+	Key   string     `json:"key" bson:"key" binding:"required"`
+	Value *NearValue `json:"value" bson:"value"`
+}
+
 // Range struct
 type Range struct {
 	Key   string      `json:"key" bson:"key" binding:"required"`
@@ -85,6 +104,7 @@ type Filter struct {
 	In    []In    `json:"in" bson:"in"`
 	NotIn []NotIn `json:"nin" bson:"nin"`
 	All   []All   `json:"all" bson:"all"`
+	Near  []Near  `json:"near" bson:"near"`
 }
 
 // Sort struct
@@ -532,6 +552,34 @@ func GetFilterAllParams(all []All, query db.Map) (int, error) {
 	return parsed, nil
 }
 
+// GetFilterNearParams function
+func GetFilterNearParams(nears []Near, query db.Map) (int, error) {
+	parsed := 0
+	for _, v := range nears {
+		if strings.Trim(v.Key, " ") == "" || v.Value == nil {
+			continue
+		}
+		if v.Value != nil {
+			r := db.Map{}
+			if v.Value.Geometry != nil {
+				r["$geometry"] = v.Value.Geometry
+			}
+			if v.Value.MaxDistance != 0 {
+				r["$maxDistance"] = v.Value.MaxDistance
+			}
+			if v.Value.MinDistance > 0 {
+				r["$minDistance"] = v.Value.MinDistance
+			}
+			query[v.Key] = db.Map{
+				"$near": r,
+			}
+		}
+		parsed++
+	}
+
+	return parsed, nil
+}
+
 // ParseSearchQuery function
 func ParseSearchQuery(params Params, required ...bool) (db.Map, error) {
 
@@ -586,6 +634,13 @@ func ParseSearchQuery(params Params, required ...bool) (db.Map, error) {
 		return nil, err
 	}
 	parsed = parsed + filterAllParsed
+
+	//parse filter::near clause :
+	filterNearParsed, err := GetFilterNearParams(params.Filter.Near, q)
+	if err != nil {
+		return nil, err
+	}
+	parsed = parsed + filterNearParsed
 
 	if len(required) > 0 {
 		if required[0] && parsed == 0 {
