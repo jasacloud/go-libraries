@@ -16,14 +16,15 @@ package apiv3
 import (
 	"encoding/json"
 	"errors"
+	"log"
+	"strconv"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jasacloud/go-libraries/db"
 	"github.com/jasacloud/go-libraries/helper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/x/bsonx"
-	"log"
-	"strconv"
-	"strings"
 )
 
 // Attributes type
@@ -128,11 +129,12 @@ type Query struct {
 
 // Params struct
 type Params struct {
-	Query  Query       `json:"query" bson:"query"`
-	Filter Filter      `json:"filter" bson:"filter"`
-	Sort   []Sort      `json:"sort" bson:"sort"`
-	Limit  Limit       `json:"limit" bson:"limit"`
-	Data   interface{} `json:"data,omitempty" bson:"data,omitempty"`
+	Query       Query       `json:"query" bson:"query"`
+	CustomQuery interface{} `json:"custom_query,omitempty" bson:"custom_query,omitempty"`
+	Filter      Filter      `json:"filter" bson:"filter"`
+	Sort        []Sort      `json:"sort" bson:"sort"`
+	Limit       Limit       `json:"limit" bson:"limit"`
+	Data        interface{} `json:"data,omitempty" bson:"data,omitempty"`
 }
 
 // Error struct
@@ -337,7 +339,7 @@ func ParseLikeValue(like *Like, query db.Map) error {
 func ParseElemMatchValue(elemMatch *ElemMatch, query db.Map) (err error) {
 	q, err := GetQueryMatchParamsReturn(elemMatch.Value)
 	if err != nil {
-
+		return err
 	}
 	query[elemMatch.Key] = db.Map{
 		"$elemMatch": q,
@@ -641,6 +643,17 @@ func ParseSearchQuery(params Params, required ...bool) (db.Map, error) {
 		return nil, err
 	}
 	parsed = parsed + filterNearParsed
+
+	//parse custom_query :
+	if params.CustomQuery != nil {
+		customQuery, ok := params.CustomQuery.(map[string]interface{})
+		if ok && customQuery != nil {
+			for i, v := range customQuery {
+				q[i] = v
+			}
+			parsed = parsed + filterNearParsed
+		}
+	}
 
 	if len(required) > 0 {
 		if required[0] && parsed == 0 {
