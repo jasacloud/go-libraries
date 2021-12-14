@@ -414,6 +414,9 @@ func ParseAllValue(i []interface{}) db.Map {
 func GetQueryMatchParams(match []*Match, query db.Map) (int, error) {
 	parsed := 0
 	for _, v := range match {
+		if v == nil {
+			continue
+		}
 		if strings.Trim(v.Key, " ") == "" {
 			continue
 		}
@@ -431,6 +434,9 @@ func GetQueryMatchParams(match []*Match, query db.Map) (int, error) {
 func GetQueryMatchParamsReturn(match []*Match) (db.Map, error) {
 	query := db.Map{}
 	for _, v := range match {
+		if v == nil {
+			continue
+		}
 		if strings.Trim(v.Key, " ") == "" {
 			continue
 		}
@@ -447,6 +453,9 @@ func GetQueryMatchParamsReturn(match []*Match) (db.Map, error) {
 func GetQueryLikeParams(like []*Like, query db.Map) (int, error) {
 	parsed := 0
 	for _, v := range like {
+		if v == nil {
+			continue
+		}
 		if strings.Trim(v.Key, " ") == "" || strings.Trim(v.Value, " ") == "" {
 			continue
 		}
@@ -464,6 +473,9 @@ func GetQueryLikeParams(like []*Like, query db.Map) (int, error) {
 func GetQueryElemMatchParams(elemMatch []*ElemMatch, query db.Map) (int, error) {
 	parsed := 0
 	for _, v := range elemMatch {
+		if v == nil {
+			continue
+		}
 		if strings.Trim(v.Key, " ") == "" {
 			continue
 		}
