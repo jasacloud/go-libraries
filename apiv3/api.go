@@ -58,8 +58,8 @@ type RangeValue struct {
 
 // Geometry with standard GeoJSON
 type Geometry struct {
-	Type        string     `json:"type,omitempty" bson:"type,omitempty"`
-	Coordinates [2]float64 `json:"coordinates,omitempty" bson:"coordinates,omitempty"`
+	Type        string        `json:"type,omitempty" bson:"type,omitempty"`
+	Coordinates []interface{} `json:"coordinates,omitempty" bson:"coordinates,omitempty"`
 }
 
 // NearValue struct
@@ -73,6 +73,17 @@ type NearValue struct {
 type Near struct {
 	Key   string     `json:"key" bson:"key" binding:"required"`
 	Value *NearValue `json:"value" bson:"value"`
+}
+
+// GeoIntersectsValue struct
+type GeoIntersectsValue struct {
+	Geometry *Geometry `json:"geometry,omitempty" bson:"geometry,omitempty"`
+}
+
+// GeoIntersects struct
+type GeoIntersects struct {
+	Key   string              `json:"key" bson:"key" binding:"required"`
+	Value *GeoIntersectsValue `json:"value" bson:"value"`
 }
 
 // Range struct
@@ -101,11 +112,12 @@ type All struct {
 
 // Filter struct
 type Filter struct {
-	Range []Range `json:"range" bson:"range"`
-	In    []In    `json:"in" bson:"in"`
-	NotIn []NotIn `json:"nin" bson:"nin"`
-	All   []All   `json:"all" bson:"all"`
-	Near  []Near  `json:"near" bson:"near"`
+	Range         []Range         `json:"range" bson:"range"`
+	In            []In            `json:"in" bson:"in"`
+	NotIn         []NotIn         `json:"nin" bson:"nin"`
+	All           []All           `json:"all" bson:"all"`
+	Near          []Near          `json:"near" bson:"near"`
+	GeoIntersects []GeoIntersects `json:"geo_intersects" bson:"geo_intersects"`
 }
 
 // Sort struct
@@ -594,6 +606,28 @@ func GetFilterNearParams(nears []Near, query db.Map) (int, error) {
 	return parsed, nil
 }
 
+// GetFilterGeoIntersectsParams function
+func GetFilterGeoIntersectsParams(geoIntersects []GeoIntersects, query db.Map) (int, error) {
+	parsed := 0
+	for _, v := range geoIntersects {
+		if strings.Trim(v.Key, " ") == "" || v.Value == nil {
+			continue
+		}
+		if v.Value != nil {
+			r := db.Map{}
+			if v.Value.Geometry != nil {
+				r["$geometry"] = v.Value.Geometry
+			}
+			query[v.Key] = db.Map{
+				"$geoIntersects": r,
+			}
+		}
+		parsed++
+	}
+
+	return parsed, nil
+}
+
 // ParseSearchQuery function
 func ParseSearchQuery(params Params, required ...bool) (db.Map, error) {
 
@@ -655,6 +689,13 @@ func ParseSearchQuery(params Params, required ...bool) (db.Map, error) {
 		return nil, err
 	}
 	parsed = parsed + filterNearParsed
+
+	//parse filter::geo_intersects clause :
+	filterGeoIntersectsParsed, err := GetFilterGeoIntersectsParams(params.Filter.GeoIntersects, q)
+	if err != nil {
+		return nil, err
+	}
+	parsed = parsed + filterGeoIntersectsParsed
 
 	//parse custom_query :
 	if params.CustomQuery != nil {
