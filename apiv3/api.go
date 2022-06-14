@@ -80,10 +80,21 @@ type GeoIntersectsValue struct {
 	Geometry *Geometry `json:"geometry,omitempty" bson:"geometry,omitempty"`
 }
 
+// GeoWithinValue struct
+type GeoWithinValue struct {
+	Geometry *Geometry `json:"geometry,omitempty" bson:"geometry,omitempty"`
+}
+
 // GeoIntersects struct
 type GeoIntersects struct {
 	Key   string              `json:"key" bson:"key" binding:"required"`
 	Value *GeoIntersectsValue `json:"value" bson:"value"`
+}
+
+// GeoWithin struct
+type GeoWithin struct {
+	Key   string          `json:"key" bson:"key" binding:"required"`
+	Value *GeoWithinValue `json:"value" bson:"value"`
 }
 
 // Range struct
@@ -118,6 +129,7 @@ type Filter struct {
 	All           []All           `json:"all" bson:"all"`
 	Near          []Near          `json:"near" bson:"near"`
 	GeoIntersects []GeoIntersects `json:"geo_intersects" bson:"geo_intersects"`
+	GeoWithin     []GeoWithin     `json:"geo_within" bson:"geo_within"`
 }
 
 // Sort struct
@@ -628,6 +640,28 @@ func GetFilterGeoIntersectsParams(geoIntersects []GeoIntersects, query db.Map) (
 	return parsed, nil
 }
 
+// GetFilterGeoWithinParams function
+func GetFilterGeoWithinParams(geoWithin []GeoWithin, query db.Map) (int, error) {
+	parsed := 0
+	for _, v := range geoWithin {
+		if strings.Trim(v.Key, " ") == "" || v.Value == nil {
+			continue
+		}
+		if v.Value != nil {
+			r := db.Map{}
+			if v.Value.Geometry != nil {
+				r["$geometry"] = v.Value.Geometry
+			}
+			query[v.Key] = db.Map{
+				"$geoWithin": r,
+			}
+		}
+		parsed++
+	}
+
+	return parsed, nil
+}
+
 // ParseSearchQuery function
 func ParseSearchQuery(params Params, required ...bool) (db.Map, error) {
 
@@ -696,6 +730,13 @@ func ParseSearchQuery(params Params, required ...bool) (db.Map, error) {
 		return nil, err
 	}
 	parsed = parsed + filterGeoIntersectsParsed
+
+	//parse filter::geo_within clause :
+	filterGeoWithinParsed, err := GetFilterGeoWithinParams(params.Filter.GeoWithin, q)
+	if err != nil {
+		return nil, err
+	}
+	parsed = parsed + filterGeoWithinParsed
 
 	//parse custom_query :
 	if params.CustomQuery != nil {
