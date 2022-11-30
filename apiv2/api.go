@@ -18,7 +18,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jasacloud/go-libraries/helper"
 	"strconv"
+	"sync"
 )
+
+var once sync.Once
 
 // Attributes type map array
 type Attributes map[string]interface{}
@@ -107,13 +110,14 @@ type Response struct {
 
 // ParseRequest function
 func ParseRequest(c *gin.Context) (*Request, error) {
-	var request *Request
-	err := c.BindJSON(&request)
+	once.Do(helper.JsonTagNameFunc)
+	var request Request
+	err := c.ShouldBindJSON(&request)
 	if err != nil {
 		return nil, err
 	}
 
-	return request, nil
+	return &request, nil
 }
 
 // Get method

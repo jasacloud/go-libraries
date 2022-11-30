@@ -19,6 +19,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jasacloud/go-libraries/db"
@@ -26,6 +27,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/x/bsonx"
 )
+
+var once sync.Once
 
 // Attributes type
 type Attributes map[string]interface{}
@@ -214,13 +217,14 @@ type Claims struct {
 
 // ParseRequest function
 func ParseRequest(c *gin.Context) (*Request, error) {
-	var request *Request
-	err := c.BindJSON(&request)
+	once.Do(helper.JsonTagNameFunc)
+	var request Request
+	err := c.ShouldBindJSON(&request)
 	if err != nil {
 		return nil, err
 	}
 
-	return request, nil
+	return &request, nil
 }
 
 // GetMatchValue function

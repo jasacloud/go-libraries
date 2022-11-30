@@ -17,10 +17,13 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gin-gonic/gin/binding"
-	"gopkg.in/go-playground/validator.v9"
-	validatorv9 "gopkg.in/go-playground/validator.v9"
+	"gopkg.in/go-playground/validator.v10"
 	"reflect"
+	"strings"
+	"sync"
 )
+
+var once sync.Once
 
 var validate *validator.Validate
 
@@ -44,19 +47,9 @@ func ValidateJSON(o interface{}) error {
 
 // BindValidate function
 func BindValidate(o interface{}) error {
-	ginValidate, ok := binding.Validator.Engine().(*validatorv9.Validate)
-	if !ok {
-		err := binding.Validator.ValidateStruct(o)
-		if err != nil {
-			return err
-		}
-		validate = validator.New()
-		err = validate.Struct(o)
+	once.Do(JsonTagNameFunc)
 
-		return err
-	}
-
-	err := ginValidate.Struct(o)
+	err := binding.Validator.ValidateStruct(o)
 	if err != nil {
 		return err
 	}
@@ -99,4 +92,18 @@ func PairValues(i, o interface{}) error {
 	}
 
 	return nil
+}
+
+func JsonTagNameFunc() {
+	if f := reflect.ValueOf(binding.Validator.Engine()).MethodByName("RegisterTagNameFunc"); f.IsValid() {
+		var args []reflect.Value
+		args = append(args, reflect.ValueOf(func(fld reflect.StructField) string {
+			name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+			if name == "-" {
+				return ""
+			}
+			return name
+		}))
+		f.Call(args)
+	}
 }
