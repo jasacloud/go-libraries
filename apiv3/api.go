@@ -162,6 +162,7 @@ type Params struct {
 	Sort        []Sort      `json:"sort" bson:"sort"`
 	Limit       Limit       `json:"limit" bson:"limit"`
 	Data        interface{} `json:"data,omitempty" bson:"data,omitempty"`
+	Options     interface{} `json:"options,omitempty" bson:"options,omitempty"`
 }
 
 // Error struct
