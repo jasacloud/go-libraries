@@ -16,7 +16,7 @@ package broker
 import (
 	"fmt"
 	"github.com/jasacloud/go-libraries/config"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 // AmqpConf struct

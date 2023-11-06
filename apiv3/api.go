@@ -25,7 +25,6 @@ import (
 	"github.com/jasacloud/go-libraries/db"
 	"github.com/jasacloud/go-libraries/helper"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/x/bsonx"
 )
 
 var once sync.Once
@@ -234,7 +233,7 @@ func GetMatchValue(i interface{}) interface{} {
 	case int, float64, bool:
 		return value
 	case string:
-		return bsonx.Regex("^"+value+"$", "i")
+		return bson.M{"$regex": "^" + value + "$", "$options": "i"}
 	case map[string]interface{}:
 		var match Match
 		if err := helper.PairValues(value, &match); err != nil {
@@ -359,7 +358,7 @@ func ParseMatchValueReturn(match *Match) (db.Map, error) {
 // ParseLikeValue function
 func ParseLikeValue(like *Like, query db.Map) error {
 	if like.Value != "" {
-		query[like.Key] = bsonx.Regex(".*"+like.Value+".*", "i")
+		query[like.Key] = bson.M{"$regex": ".*" + like.Value + ".*", "$options": "i"}
 	}
 	return nil
 }
@@ -383,7 +382,7 @@ func ParseInValue(i []interface{}) db.Map {
 	for _, v := range i {
 		switch value := v.(type) {
 		case string:
-			in = append(in, bsonx.Regex("^"+value+"$", "i"))
+			in = append(in, bson.M{"$regex": "^" + value + "$", "$options": "i"})
 		case int:
 			in = append(in, value)
 		case float64:
@@ -404,7 +403,7 @@ func ParseNotInValue(i []interface{}) db.Map {
 	for _, v := range i {
 		switch value := v.(type) {
 		case string:
-			in = append(in, bsonx.Regex("^"+value+"$", "i"))
+			in = append(in, bson.M{"$regex": "^" + value + "$", "$options": "i"})
 		case int:
 			in = append(in, value)
 		case float64:
@@ -425,7 +424,7 @@ func ParseAllValue(i []interface{}) db.Map {
 	for _, v := range i {
 		switch value := v.(type) {
 		case string:
-			all = append(all, bsonx.Regex("^"+value+"$", "i"))
+			all = append(all, bson.M{"$regex": "^" + value + "$", "$options": "i"})
 		case int:
 			all = append(all, value)
 		case float64:
@@ -1082,6 +1081,17 @@ func (a Attributes) ParseKeyValSetAttributes() Attributes {
 // PairTo method
 func (a *Attributes) PairTo(o interface{}) error {
 	return helper.PairValues(a, o)
+}
+
+// PairKeyTo method
+func (a *Attributes) PairKeyTo(key string, o interface{}) error {
+	return helper.PairValues(a.Get(key), o)
+}
+
+// KeyExists method
+func (a Attributes) KeyExists(key string) bool {
+	_, ok := a[key]
+	return ok
 }
 
 // ParseSubAttributes function

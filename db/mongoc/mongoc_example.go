@@ -5,7 +5,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/x/bsonx"
 	"log"
 )
 
@@ -66,8 +65,8 @@ func (c *Connections) TestFind() {
 
 // EnsureIndexesTest method
 func (c *Connections) EnsureIndexesTest() ([]string, error) {
-	indexKeys := bsonx.Doc{
-		{Key: "id", Value: bsonx.Int32(int32(1))},
+	indexKeys := bson.D{
+		{Key: "id", Value: 1},
 	}
 	indexOptions := options.Index()
 	indexOptions.SetUnique(true)
@@ -78,10 +77,10 @@ func (c *Connections) EnsureIndexesTest() ([]string, error) {
 	index.Keys = indexKeys
 	index.Options = indexOptions
 
-	indexKeys2 := bsonx.Doc{
-		{Key: "name", Value: bsonx.Int32(int32(1))},
-		{Key: "type", Value: bsonx.Int32(int32(1))},
-		{Key: "parent", Value: bsonx.Int32(int32(1))},
+	indexKeys2 := bson.D{
+		{Key: "name", Value: 1},
+		{Key: "type", Value: 1},
+		{Key: "parent", Value: 1},
 	}
 	indexOptions2 := options.Index()
 	indexOptions2.SetUnique(true)

@@ -20,7 +20,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/x/bsonx"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
 	"log"
 	"strings"
@@ -348,7 +347,7 @@ func NewIndex() *Index {
 }
 
 // AddKeys method
-func (i *Index) AddKeys(keys bsonx.Doc) *Index {
+func (i *Index) AddKeys(keys bson.D) *Index {
 	i.IndexModel.Keys = keys
 
 	return i
@@ -408,10 +407,10 @@ func (i *Index) SetName(name string) *Index {
 
 // example IndexModel :
 func yieldIndexModel() mongo.IndexModel {
-	indexKeys := bsonx.Doc{
-		{Key: "name", Value: bsonx.Int32(int32(1))},
-		{Key: "type", Value: bsonx.Int32(int32(1))},
-		{Key: "parent", Value: bsonx.Int32(int32(1))},
+	indexKeys := bson.D{
+		{Key: "name", Value: 1},
+		{Key: "type", Value: 1},
+		{Key: "parent", Value: 1},
 	}
 	indexOptions := options.Index()
 	indexOptions.SetUnique(true)

@@ -333,6 +333,17 @@ func (a *Attributes) PairTo(o interface{}) error {
 	return helper.PairValues(a, o)
 }
 
+// PairKeyTo method
+func (a *Attributes) PairKeyTo(key string, o interface{}) error {
+	return helper.PairValues(a.Get(key), o)
+}
+
+// KeyExists method
+func (a Attributes) KeyExists(key string) bool {
+	_, ok := a[key]
+	return ok
+}
+
 // ParseSubAttributes function
 func ParseSubAttributes(i, o Attributes, key *string) {
 	for i, v := range i {
