@@ -392,7 +392,7 @@ func ParseInValue(i []interface{}) db.Map {
 			in = append(in, value)
 		default:
 			var regex primitive.Regex
-			if err := helper.PairValues(value, &regex); err != nil && regex.Pattern != "" {
+			if err := helper.PairValues(value, &regex); err == nil && regex.Pattern != "" {
 				in = append(in, regex)
 			}
 		}
@@ -417,7 +417,7 @@ func ParseNotInValue(i []interface{}) db.Map {
 			in = append(in, value)
 		default:
 			var regex primitive.Regex
-			if err := helper.PairValues(value, &regex); err != nil && regex.Pattern != "" {
+			if err := helper.PairValues(value, &regex); err == nil && regex.Pattern != "" {
 				in = append(in, regex)
 			}
 		}
@@ -442,7 +442,7 @@ func ParseAllValue(i []interface{}) db.Map {
 			all = append(all, value)
 		default:
 			var regex primitive.Regex
-			if err := helper.PairValues(value, &regex); err != nil && regex.Pattern != "" {
+			if err := helper.PairValues(value, &regex); err == nil && regex.Pattern != "" {
 				all = append(all, regex)
 			}
 		}
