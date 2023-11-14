@@ -25,6 +25,7 @@ import (
 	"github.com/jasacloud/go-libraries/db"
 	"github.com/jasacloud/go-libraries/helper"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var once sync.Once
@@ -233,7 +234,7 @@ func GetMatchValue(i interface{}) interface{} {
 	case int, float64, bool:
 		return value
 	case string:
-		return bson.M{"$regex": "^" + value + "$", "$options": "i"}
+		return bson.M{"$regex": "^" + value + "$", "$options": ""}
 	case map[string]interface{}:
 		var match Match
 		if err := helper.PairValues(value, &match); err != nil {
@@ -382,7 +383,7 @@ func ParseInValue(i []interface{}) db.Map {
 	for _, v := range i {
 		switch value := v.(type) {
 		case string:
-			in = append(in, bson.M{"$regex": "^" + value + "$", "$options": "i"})
+			in = append(in, primitive.Regex{Pattern: "^" + value + "$"})
 		case int:
 			in = append(in, value)
 		case float64:
@@ -390,6 +391,7 @@ func ParseInValue(i []interface{}) db.Map {
 		case bool:
 			in = append(in, value)
 		default:
+			in = append(in, value)
 		}
 	}
 
@@ -403,7 +405,7 @@ func ParseNotInValue(i []interface{}) db.Map {
 	for _, v := range i {
 		switch value := v.(type) {
 		case string:
-			in = append(in, bson.M{"$regex": "^" + value + "$", "$options": "i"})
+			in = append(in, primitive.Regex{Pattern: "^" + value + "$"})
 		case int:
 			in = append(in, value)
 		case float64:
@@ -411,6 +413,10 @@ func ParseNotInValue(i []interface{}) db.Map {
 		case bool:
 			in = append(in, value)
 		default:
+			var regex primitive.Regex
+			if err := helper.PairValues(value, &regex); err != nil && regex.Pattern != "" {
+				in = append(in, regex)
+			}
 		}
 	}
 
@@ -424,7 +430,7 @@ func ParseAllValue(i []interface{}) db.Map {
 	for _, v := range i {
 		switch value := v.(type) {
 		case string:
-			all = append(all, bson.M{"$regex": "^" + value + "$", "$options": "i"})
+			all = append(all, primitive.Regex{Pattern: "^" + value + "$"})
 		case int:
 			all = append(all, value)
 		case float64:
@@ -432,6 +438,10 @@ func ParseAllValue(i []interface{}) db.Map {
 		case bool:
 			all = append(all, value)
 		default:
+			var regex primitive.Regex
+			if err := helper.PairValues(value, &regex); err != nil && regex.Pattern != "" {
+				all = append(all, regex)
+			}
 		}
 	}
 
