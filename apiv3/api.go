@@ -391,7 +391,10 @@ func ParseInValue(i []interface{}) db.Map {
 		case bool:
 			in = append(in, value)
 		default:
-			in = append(in, value)
+			var regex primitive.Regex
+			if err := helper.PairValues(value, &regex); err != nil && regex.Pattern != "" {
+				in = append(in, regex)
+			}
 		}
 	}
 
