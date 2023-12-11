@@ -234,7 +234,7 @@ func GetMatchValue(i interface{}) interface{} {
 	case int, float64, bool:
 		return value
 	case string:
-		return bson.M{"$regex": "^" + value + "$", "$options": ""}
+		return value
 	case map[string]interface{}:
 		var match Match
 		if err := helper.PairValues(value, &match); err != nil {
@@ -383,7 +383,7 @@ func ParseInValue(i []interface{}) db.Map {
 	for _, v := range i {
 		switch value := v.(type) {
 		case string:
-			in = append(in, primitive.Regex{Pattern: "^" + value + "$"})
+			in = append(in, value)
 		case int:
 			in = append(in, value)
 		case float64:
@@ -408,7 +408,7 @@ func ParseNotInValue(i []interface{}) db.Map {
 	for _, v := range i {
 		switch value := v.(type) {
 		case string:
-			in = append(in, primitive.Regex{Pattern: "^" + value + "$"})
+			in = append(in, value)
 		case int:
 			in = append(in, value)
 		case float64:
@@ -433,7 +433,7 @@ func ParseAllValue(i []interface{}) db.Map {
 	for _, v := range i {
 		switch value := v.(type) {
 		case string:
-			all = append(all, primitive.Regex{Pattern: "^" + value + "$"})
+			all = append(all, value)
 		case int:
 			all = append(all, value)
 		case float64:
