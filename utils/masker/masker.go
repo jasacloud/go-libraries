@@ -553,7 +553,7 @@ func UriPassword(i string) string {
 	if err == nil && _URL != nil && _URL.User != nil {
 		username := _URL.User.Username()
 		if password, _ := _URL.User.Password(); password != "" {
-			_URL.User = url.UserPassword(username, "********")
+			_URL.User = url.UserPassword(username, "xxxxxxxx")
 		}
 	}
 	return _URL.String()
