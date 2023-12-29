@@ -18,6 +18,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"github.com/jasacloud/go-libraries/config"
+	"github.com/jasacloud/go-libraries/utils/masker"
 	"gopkg.in/mgo.v2"
 	"log"
 	"net"
@@ -181,7 +182,7 @@ func connectURI(uri string) (*Connections, error) {
 		return nil, err
 	}
 
-	log.Println("Connected to MongoDB on: " + strings.ReplaceAll(uri, dialInfo.Password, "xxxxxx"))
+	log.Println("Connected to MongoDB on: " + masker.UriPassword(uri))
 	session.SetMode(mgo.Primary, true)
 	database := session.DB(dialInfo.Database)
 	collection := database.C(dialInfo.Database)

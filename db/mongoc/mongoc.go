@@ -17,6 +17,7 @@ import (
 	"context"
 	"errors"
 	"github.com/jasacloud/go-libraries/config"
+	"github.com/jasacloud/go-libraries/utils/masker"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -171,7 +172,7 @@ func connectURI(uri string) (*Connections, error) {
 		return nil, err
 	}
 
-	log.Println("Connected to MongoDB on: " + strings.ReplaceAll(uri, clientOptions.Auth.Password, "xxxxxx"))
+	log.Println("Connected to MongoDB on: " + masker.UriPassword(uri))
 	database := client.Database(databaseName)
 	collection := database.Collection(databaseName)
 

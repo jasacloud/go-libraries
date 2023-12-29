@@ -4,6 +4,7 @@ package masker
 import (
 	"fmt"
 	"math"
+	"net/url"
 	"reflect"
 	"strings"
 )
@@ -65,36 +66,36 @@ func (m *Masker) overlay(str string, overlay string, start int, end int) (overla
 //
 // Example:
 //
-//   type Foo struct {
-//       Name      string `mask:"name"`
-//       Email     string `mask:"email"`
-//       Password  string `mask:"password"`
-//       ID        string `mask:"id"`
-//       Address   string `mask:"addr"`
-//       Mobile    string `mask:"mobile"`
-//       Telephone string `mask:"tel"`
-//       Credit    string `mask:"credit"`
-//       Foo       *Foo   `mask:"struct"`
-//   }
+//	type Foo struct {
+//	    Name      string `mask:"name"`
+//	    Email     string `mask:"email"`
+//	    Password  string `mask:"password"`
+//	    ID        string `mask:"id"`
+//	    Address   string `mask:"addr"`
+//	    Mobile    string `mask:"mobile"`
+//	    Telephone string `mask:"tel"`
+//	    Credit    string `mask:"credit"`
+//	    Foo       *Foo   `mask:"struct"`
+//	}
 //
-//   func main() {
-//       s := &Foo{
-//           Name: ...,
-//           Email: ...,
-//           Password: ...,
-//           Foo: &{
-//               Name: ...,
-//               Email: ...,
-//               Password: ...,
-//           }
-//       }
+//	func main() {
+//	    s := &Foo{
+//	        Name: ...,
+//	        Email: ...,
+//	        Password: ...,
+//	        Foo: &{
+//	            Name: ...,
+//	            Email: ...,
+//	            Password: ...,
+//	        }
+//	    }
 //
-//       m := masker.New()
+//	    m := masker.New()
 //
-//       t, err := m.Struct(s)
+//	    t, err := m.Struct(s)
 //
-//       fmt.Println(t.(*Foo))
-//   }
+//	    fmt.Println(t.(*Foo))
+//	}
 func (m *Masker) Struct(s interface{}) (interface{}, error) {
 	if s == nil {
 		return nil, fmt.Errorf("input is nil")
@@ -221,9 +222,9 @@ func (m *Masker) Struct(s interface{}) (interface{}, error) {
 //
 // Example:
 //
-//   masker.String(masker.MName, "ggwhite")
-//   masker.String(masker.MID, "A123456789")
-//   masker.String(masker.MMobile, "0987987987")
+//	masker.String(masker.MName, "ggwhite")
+//	masker.String(masker.MID, "A123456789")
+//	masker.String(masker.MMobile, "0987987987")
 func (m *Masker) String(t mtype, i string) string {
 	switch t {
 	default:
@@ -250,8 +251,9 @@ func (m *Masker) String(t mtype, i string) string {
 // Name mask the second letter and the third letter
 //
 // Example:
-//   input: ABCD
-//   output: A**D
+//
+//	input: ABCD
+//	output: A**D
 func (m *Masker) Name(i string) string {
 	l := len([]rune(i))
 
@@ -282,8 +284,9 @@ func (m *Masker) Name(i string) string {
 // ID mask last 4 digits of ID number
 //
 // Example:
-//   input: A123456789
-//   output: A12345****
+//
+//	input: A123456789
+//	output: A12345****
 func (m *Masker) ID(i string) string {
 	l := len([]rune(i))
 	if l == 0 {
@@ -295,8 +298,9 @@ func (m *Masker) ID(i string) string {
 // Address keep first 6 letters, mask the rest
 //
 // Example:
-//   input: 台北市內湖區內湖路一段737巷1號1樓
-//   output: 台北市內湖區******
+//
+//	input: 台北市內湖區內湖路一段737巷1號1樓
+//	output: 台北市內湖區******
 func (m *Masker) Address(i string) string {
 	l := len([]rune(i))
 	if l == 0 {
@@ -311,10 +315,11 @@ func (m *Masker) Address(i string) string {
 // CreditCard mask 6 digits from the 7'th digit
 //
 // Example:
-//   input1: 1234567890123456 (VISA, JCB, MasterCard)(len = 16)
-//   output1: 123456******3456
-//   input2: 123456789012345` (American Express)(len = 15)
-//   output2: 123456******345`
+//
+//	input1: 1234567890123456 (VISA, JCB, MasterCard)(len = 16)
+//	output1: 123456******3456
+//	input2: 123456789012345` (American Express)(len = 15)
+//	output2: 123456******345`
 func (m *Masker) CreditCard(i string) string {
 	l := len([]rune(i))
 	if l == 0 {
@@ -326,8 +331,9 @@ func (m *Masker) CreditCard(i string) string {
 // Email keep domain and the first 3 letters
 //
 // Example:
-//   input: ggw.chang@gmail.com
-//   output: ggw****@gmail.com
+//
+//	input: ggw.chang@gmail.com
+//	output: ggw****@gmail.com
 func (m *Masker) Email(i string) string {
 	l := len([]rune(i))
 	if l == 0 {
@@ -349,8 +355,9 @@ func (m *Masker) Email(i string) string {
 // Mobile mask 3 digits from the 4'th digit
 //
 // Example:
-//   input: 0987654321
-//   output: 0987***321
+//
+//	input: 0987654321
+//	output: 0987***321
 func (m *Masker) Mobile(i string) string {
 	if len(i) == 0 {
 		return ""
@@ -361,8 +368,9 @@ func (m *Masker) Mobile(i string) string {
 // Telephone remove "(", ")", " ", "-" chart, and mask last 4 digits of telephone number, format to "(??)????-????"
 //
 // Example:
-//   input: 0227993078
-//   output: (02)2799-****
+//
+//	input: 0227993078
+//	output: (02)2799-****
 func (m *Masker) Telephone(i string) string {
 	l := len([]rune(i))
 	if l == 0 {
@@ -420,34 +428,34 @@ func init() {
 //
 // Example:
 //
-//   type Foo struct {
-//       Name      string `mask:"name"`
-//       Email     string `mask:"email"`
-//       Password  string `mask:"password"`
-//       ID        string `mask:"id"`
-//       Address   string `mask:"addr"`
-//       Mobile    string `mask:"mobile"`
-//       Telephone string `mask:"tel"`
-//       Credit    string `mask:"credit"`
-//       Foo       *Foo   `mask:"struct"`
-//   }
+//	type Foo struct {
+//	    Name      string `mask:"name"`
+//	    Email     string `mask:"email"`
+//	    Password  string `mask:"password"`
+//	    ID        string `mask:"id"`
+//	    Address   string `mask:"addr"`
+//	    Mobile    string `mask:"mobile"`
+//	    Telephone string `mask:"tel"`
+//	    Credit    string `mask:"credit"`
+//	    Foo       *Foo   `mask:"struct"`
+//	}
 //
-//   func main() {
-//       s := &Foo{
-//           Name: ...,
-//           Email: ...,
-//           Password: ...,
-//           Foo: &{
-//               Name: ...,
-//               Email: ...,
-//               Password: ...,
-//           }
-//       }
+//	func main() {
+//	    s := &Foo{
+//	        Name: ...,
+//	        Email: ...,
+//	        Password: ...,
+//	        Foo: &{
+//	            Name: ...,
+//	            Email: ...,
+//	            Password: ...,
+//	        }
+//	    }
 //
-//       t, err := masker.Struct(s)
+//	    t, err := masker.Struct(s)
 //
-//       fmt.Println(t.(*Foo))
-//   }
+//	    fmt.Println(t.(*Foo))
+//	}
 func Struct(s interface{}) (interface{}, error) {
 	return instance.Struct(s)
 }
@@ -456,9 +464,9 @@ func Struct(s interface{}) (interface{}, error) {
 //
 // Example:
 //
-//   masker.String(masker.MName, "ggwhite")
-//   masker.String(masker.MID, "A123456789")
-//   masker.String(masker.MMobile, "0987987987")
+//	masker.String(masker.MName, "ggwhite")
+//	masker.String(masker.MID, "A123456789")
+//	masker.String(masker.MMobile, "0987987987")
 func String(t mtype, i string) string {
 	return instance.String(t, i)
 }
@@ -466,8 +474,9 @@ func String(t mtype, i string) string {
 // Name mask the second letter and the third letter
 //
 // Example:
-//   input: ABCD
-//   output: A**D
+//
+//	input: ABCD
+//	output: A**D
 func Name(i string) string {
 	return instance.Name(i)
 }
@@ -475,8 +484,9 @@ func Name(i string) string {
 // ID mask last 4 digits of ID number
 //
 // Example:
-//   input: A123456789
-//   output: A12345****
+//
+//	input: A123456789
+//	output: A12345****
 func ID(i string) string {
 	return instance.ID(i)
 }
@@ -484,8 +494,9 @@ func ID(i string) string {
 // Address keep first 6 letters, mask the rest
 //
 // Example:
-//   input: 台北市內湖區內湖路一段737巷1號1樓
-//   output: 台北市內湖區******
+//
+//	input: 台北市內湖區內湖路一段737巷1號1樓
+//	output: 台北市內湖區******
 func Address(i string) string {
 	return instance.Address(i)
 }
@@ -493,10 +504,11 @@ func Address(i string) string {
 // CreditCard mask 6 digits from the 7'th digit
 //
 // Example:
-//   input1: 1234567890123456 (VISA, JCB, MasterCard)(len = 16)
-//   output1: 123456******3456
-//   input2: 123456789012345 (American Express)(len = 15)
-//   output2: 123456******345
+//
+//	input1: 1234567890123456 (VISA, JCB, MasterCard)(len = 16)
+//	output1: 123456******3456
+//	input2: 123456789012345 (American Express)(len = 15)
+//	output2: 123456******345
 func CreditCard(i string) string {
 	return instance.CreditCard(i)
 }
@@ -504,8 +516,9 @@ func CreditCard(i string) string {
 // Email keep domain and the first 3 letters
 //
 // Example:
-//   input: ggw.chang@gmail.com
-//   output: ggw****@gmail.com
+//
+//	input: ggw.chang@gmail.com
+//	output: ggw****@gmail.com
 func Email(i string) string {
 	return instance.Email(i)
 }
@@ -513,8 +526,9 @@ func Email(i string) string {
 // Mobile mask 3 digits from the 4'th digit
 //
 // Example:
-//   input: 0987654321
-//   output: 0987***321
+//
+//	input: 0987654321
+//	output: 0987***321
 func Mobile(i string) string {
 	return instance.Mobile(i)
 }
@@ -522,8 +536,9 @@ func Mobile(i string) string {
 // Telephone remove "(", ")", " ", "-" chart, and mask last 4 digits of telephone number, format to "(??)????-????"
 //
 // Example:
-//   input: 0227993078
-//   output: (02)2799-****
+//
+//	input: 0227993078
+//	output: (02)2799-****
 func Telephone(i string) string {
 	return instance.Telephone(i)
 }
@@ -531,4 +546,15 @@ func Telephone(i string) string {
 // Password always return "************"
 func Password(i string) string {
 	return instance.Password(i)
+}
+
+func UriPassword(i string) string {
+	_URL, err := url.Parse(i)
+	if err == nil && _URL != nil && _URL.User != nil {
+		username := _URL.User.Username()
+		if password, _ := _URL.User.Password(); password != "" {
+			_URL.User = url.UserPassword(username, "********")
+		}
+	}
+	return _URL.String()
 }
