@@ -19,7 +19,7 @@ import (
 	"errors"
 	"github.com/jasacloud/go-libraries/config"
 	"github.com/jasacloud/go-libraries/utils/masker"
-	"github.com/juju/mgo"
+	"github.com/juju/mgo/v3"
 	"log"
 	"net"
 	"strings"

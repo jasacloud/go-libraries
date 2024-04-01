@@ -19,7 +19,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/jasacloud/go-libraries/config"
-	"github.com/juju/mgo"
+	"github.com/juju/mgo/v3"
 	"log"
 	"net"
 	"strings"
