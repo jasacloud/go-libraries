@@ -172,6 +172,8 @@ func MgoParseURI(url string, rootCAs *x509.CertPool) (*mgo.DialInfo, error) {
 		}
 	}
 
+	dialInfo.Mechanism = "SCRAM-SHA-1"
+
 	return dialInfo, err
 }
 
