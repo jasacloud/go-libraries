@@ -25,6 +25,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Resource struct
@@ -141,8 +142,8 @@ func connectURI(uri string) (*Connections, error) {
 	// Set client options
 	clientOptions := options.Client()
 	clientOptions.ApplyURI(uri)
-	//clientOptions.SetConnectTimeout(60 * time.Second)
-	//clientOptions.SetServerSelectionTimeout(60 * time.Second)
+	clientOptions.SetConnectTimeout(15 * time.Second)
+	clientOptions.SetServerSelectionTimeout(15 * time.Second)
 	err := clientOptions.Validate()
 	if err != nil {
 		return nil, err
@@ -161,14 +162,15 @@ func connectURI(uri string) (*Connections, error) {
 	// connect to MongoDB
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
-
 		return nil, err
 	}
 
 	// Check the connection
 	err = client.Ping(context.TODO(), nil)
-
 	if err != nil {
+		if e := client.Disconnect(context.TODO()); e != nil {
+			log.Println("disconnect connection error:", e)
+		}
 		return nil, err
 	}
 
@@ -207,38 +209,17 @@ func connect(resourceName string) (*Connections, error) {
 
 // NewConnectionURI function
 func NewConnectionURI(uri string) (*Connections, error) {
-	connection, err := GetConnectionURI(uri)
-	if err != nil {
-		if connection != nil && connection.Client != nil {
-			if err := connection.Client.Disconnect(context.TODO()); err != nil {
-				log.Println("disconnect connection error:", err)
-			}
-		}
-		return SetNewConnectionURI(uri)
-	}
-
-	return connection, nil
-}
-
-// GetConnectionURI function
-func GetConnectionURI(uri string) (*Connections, error) {
-	AllConnection.RLock()
-	defer AllConnection.RUnlock()
-	if AllConnection.Connections[uri] != nil {
-		err := AllConnection.Connections[uri].CheckConnection()
-		if err != nil {
-			return nil, err
-		}
-		return AllConnection.Connections[uri], nil
-	}
-
-	return nil, errors.New("connection not found")
-}
-
-// SetNewConnectionURI function
-func SetNewConnectionURI(uri string) (*Connections, error) {
 	AllConnection.Lock()
 	defer AllConnection.Unlock()
+	if AllConnection.Connections[uri] != nil {
+		err := AllConnection.Connections[uri].CheckConnection()
+		if err == nil {
+			return AllConnection.Connections[uri], nil
+		}
+		if err := AllConnection.Connections[uri].Client.Disconnect(context.TODO()); err != nil {
+			log.Println("disconnect connection error:", err)
+		}
+	}
 	connection, err := connectURI(uri)
 	if err != nil {
 		return nil, err
@@ -250,33 +231,17 @@ func SetNewConnectionURI(uri string) (*Connections, error) {
 
 // NewConnection function
 func NewConnection(resourceName string) (*Connections, error) {
-	connection, err := GetConnection(resourceName)
-	if err != nil {
-		return SetNewConnection(resourceName)
-	}
-
-	return connection, nil
-}
-
-// GetConnection function
-func GetConnection(resourceName string) (*Connections, error) {
-	AllConnection.RLock()
-	defer AllConnection.RUnlock()
-	if AllConnection.Connections[resourceName] != nil {
-		err := AllConnection.Connections[resourceName].CheckConnection()
-		if err != nil {
-			return nil, err
-		}
-		return AllConnection.Connections[resourceName], nil
-	}
-
-	return nil, errors.New("connection not found")
-}
-
-// SetNewConnection function
-func SetNewConnection(resourceName string) (*Connections, error) {
 	AllConnection.Lock()
 	defer AllConnection.Unlock()
+	if AllConnection.Connections[resourceName] != nil {
+		err := AllConnection.Connections[resourceName].CheckConnection()
+		if err == nil {
+			return AllConnection.Connections[resourceName], nil
+		}
+		if err != mongo.ErrClientDisconnected {
+			return nil, err
+		}
+	}
 	connection, err := connect(resourceName)
 	if err != nil {
 		return nil, err
