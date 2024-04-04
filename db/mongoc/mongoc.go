@@ -159,14 +159,14 @@ func connectURI(uri string) (*Connections, error) {
 	//clientOptions.Auth.AuthSource = ""
 
 	// connect to MongoDB
-	client, err := mongo.Connect(context.Background(), clientOptions)
+	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
 
 		return nil, err
 	}
 
 	// Check the connection
-	err = client.Ping(context.Background(), nil)
+	err = client.Ping(context.TODO(), nil)
 
 	if err != nil {
 		return nil, err
@@ -209,6 +209,11 @@ func connect(resourceName string) (*Connections, error) {
 func NewConnectionURI(uri string) (*Connections, error) {
 	connection, err := GetConnectionURI(uri)
 	if err != nil {
+		if connection != nil && connection.Client != nil {
+			if err := connection.Client.Disconnect(context.TODO()); err != nil {
+				log.Println("disconnect connection error:", err)
+			}
+		}
 		return SetNewConnectionURI(uri)
 	}
 
@@ -298,7 +303,7 @@ func (c *Connections) C(name string) {
 // CheckConnection method
 func (c *Connections) CheckConnection() error {
 	command := bson.D{{Key: "ping", Value: 1}}
-	err := c.Client.Database("admin").RunCommand(context.Background(), command).Err()
+	err := c.Client.Database("admin").RunCommand(context.TODO(), command).Err()
 	if err != nil {
 		log.Println("check connection error:", err)
 
@@ -311,19 +316,19 @@ func (c *Connections) CheckConnection() error {
 // EnsureIndex method
 func (c *Connections) EnsureIndex(index mongo.IndexModel) (string, error) {
 
-	return c.Collection.Indexes().CreateOne(context.Background(), index)
+	return c.Collection.Indexes().CreateOne(context.TODO(), index)
 }
 
 // EnsureIndexes method
 func (c *Connections) EnsureIndexes(indexes ...mongo.IndexModel) ([]string, error) {
 
-	return c.Collection.Indexes().CreateMany(context.Background(), indexes)
+	return c.Collection.Indexes().CreateMany(context.TODO(), indexes)
 }
 
 // CreateIndex method
 func (c *Connections) CreateIndex(index *Index) (string, error) {
 
-	return c.Collection.Indexes().CreateOne(context.Background(), index.IndexModel, index.CreateIndexesOptions)
+	return c.Collection.Indexes().CreateOne(context.TODO(), index.IndexModel, index.CreateIndexesOptions)
 }
 
 // CreateIndexes method
@@ -335,7 +340,7 @@ func (c *Connections) CreateIndexes(index ...*Index) ([]string, error) {
 		sliceOpts = append(sliceOpts, v.CreateIndexesOptions)
 	}
 
-	return c.Collection.Indexes().CreateMany(context.Background(), sliceIndex, sliceOpts...)
+	return c.Collection.Indexes().CreateMany(context.TODO(), sliceIndex, sliceOpts...)
 }
 
 // NewIndex function
