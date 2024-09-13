@@ -137,7 +137,7 @@ func Start() {
 				HostPolicy: autocert.HostWhitelist(ListenSslConfig.ListenSsl.Domain...),
 				Cache:      autocert.DirCache(".cache"),
 			}
-			RunWithManager(Route, &m)
+			runWithManager(Route, &m)
 		} else {
 			if ListenSslConfig.ListenSsl.SslOnly == true {
 				if runtime.GOOS == "windows" {
@@ -145,25 +145,29 @@ func Start() {
 					ListenSslConfig.ListenSsl.KeyFile = path.Join(config.GetConfigDir(), ListenSslConfig.ListenSsl.KeyFile)
 				}
 				fmt.Println("Listen ssl/tls only")
-				RunTLS(ListenSslConfig.ListenSsl.addr(), Route, ListenSslConfig.ListenSsl.CertFile, ListenSslConfig.ListenSsl.KeyFile)
+				runTLS(ListenSslConfig.ListenSsl.addr(), Route, ListenSslConfig.ListenSsl.CertFile, ListenSslConfig.ListenSsl.KeyFile)
 			} else {
 				go func() {
-					Run(Route, ListenConfig.Listen.addr())
+					run(Route, ListenConfig.Listen.addr())
 				}()
 				if runtime.GOOS == "windows" {
 					ListenSslConfig.ListenSsl.CertFile = path.Join(config.GetConfigDir(), ListenSslConfig.ListenSsl.CertFile)
 					ListenSslConfig.ListenSsl.KeyFile = path.Join(config.GetConfigDir(), ListenSslConfig.ListenSsl.KeyFile)
 				}
-				RunTLS(ListenSslConfig.ListenSsl.addr(), Route, ListenSslConfig.ListenSsl.CertFile, ListenSslConfig.ListenSsl.KeyFile)
+				runTLS(ListenSslConfig.ListenSsl.addr(), Route, ListenSslConfig.ListenSsl.CertFile, ListenSslConfig.ListenSsl.KeyFile)
 			}
 		}
 	} else {
-		Run(Route, ListenConfig.Listen.addr())
+		run(Route, ListenConfig.Listen.addr())
 	}
 }
 
-// StartX function
-func StartX() {
+func Stop() {
+	shutdown()
+}
+
+// startX function
+func startX() {
 	if ListenConfig.Listen.Ssl {
 		if ListenSslConfig.ListenSsl.AutoTls {
 			m := autocert.Manager{

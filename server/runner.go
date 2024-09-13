@@ -4,27 +4,26 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/acme/autocert"
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
-
-	"golang.org/x/crypto/acme/autocert"
 )
 
-// RunAutoCert support 1-line LetsEncrypt HTTPS servers
-func RunAutoCert(r http.Handler, domain ...string) error {
+var (
+	srv    *http.Server
+	srvTLS *http.Server
+)
+
+// runAutoCert support 1-line LetsEncrypt HTTPS servers
+func runAutoCert(r http.Handler, domain ...string) error {
 	return http.Serve(autocert.NewListener(domain...), r)
 }
 
-// RunWithManager support custom autocert manager
-func RunWithManager(r http.Handler, m *autocert.Manager) {
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
-
-	srv := &http.Server{
+// runWithManager support custom autocert manager
+func runWithManager(r http.Handler, m *autocert.Manager) {
+	srvTLS = &http.Server{
 		Addr:      ":https",
 		TLSConfig: m.TLSConfig(),
 		Handler:   r,
@@ -33,22 +32,9 @@ func RunWithManager(r http.Handler, m *autocert.Manager) {
 	go func() {
 		log.Fatal(http.ListenAndServe(":http", m.HTTPHandler(http.HandlerFunc(redirect))))
 	}()
-	go func() {
-		log.Fatal(srv.ListenAndServeTLS("", ""))
-	}()
-	log.Print("The service is ready to listen and serve.")
-
-	killSignal := <-interrupt
-	switch killSignal {
-	case os.Interrupt:
-		log.Print("Got SIGINT...")
-	case syscall.SIGTERM:
-		log.Print("Got SIGTERM...")
+	if err := srvTLS.ListenAndServeTLS("", ""); err != nil {
+		log.Fatal(err)
 	}
-
-	log.Print("The service is shutting down...")
-	srv.Shutdown(context.Background())
-	log.Print("Done")
 }
 
 // redirect function
@@ -62,55 +48,42 @@ func redirect(w http.ResponseWriter, req *http.Request) {
 	http.Redirect(w, req, target, http.StatusTemporaryRedirect)
 }
 
-// RunTLS function
-func RunTLS(addr string, engine http.Handler, certFile, keyFile string) {
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
-
+// runTLS function
+func runTLS(addr string, engine http.Handler, certFile, keyFile string) {
 	debugPrint("Listening and serving HTTPS on %s\n", addr)
 
-	srv := &http.Server{Addr: addr, Handler: engine}
-	go func() {
-		log.Fatal(srv.ListenAndServeTLS(certFile, keyFile))
-	}()
-
-	killSignal := <-interrupt
-	switch killSignal {
-	case os.Interrupt:
-		log.Print("Got SIGINT...")
-	case syscall.SIGTERM:
-		log.Print("Got SIGTERM...")
+	srvTLS = &http.Server{Addr: addr, Handler: engine}
+	if err := srvTLS.ListenAndServeTLS(certFile, keyFile); err != nil {
+		log.Fatal(err)
 	}
-
-	log.Print("The service is shutting down...")
-	srv.Shutdown(context.Background())
-	log.Print("Done")
 }
 
-// Run function
-func Run(engine http.Handler, addr ...string) {
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
-
+// run function
+func run(engine http.Handler, addr ...string) {
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
 
-	srv := &http.Server{Addr: address, Handler: engine}
-	go func() {
-		log.Fatal(srv.ListenAndServe())
-	}()
-
-	killSignal := <-interrupt
-	switch killSignal {
-	case os.Interrupt:
-		log.Print("Got SIGINT...")
-	case syscall.SIGTERM:
-		log.Print("Got SIGTERM...")
+	srv = &http.Server{Addr: address, Handler: engine}
+	if err := srv.ListenAndServe(); err != nil {
+		log.Fatal(err)
 	}
+}
 
-	log.Print("The service is shutting down...")
-	srv.Shutdown(context.Background())
-	log.Print("Done")
+func shutdown() {
+	if srv != nil {
+		if err := srv.Shutdown(context.TODO()); err != nil {
+			log.Printf("The service is shutting down with error: %v", err)
+		} else {
+			log.Print("The service is shutting down...")
+		}
+	}
+	if srvTLS != nil {
+		if err := srvTLS.Shutdown(context.TODO()); err != nil {
+			log.Printf("The service is shutting down with error: %v", err)
+		} else {
+			log.Print("The service is shutting down...")
+		}
+	}
 }
 
 // debugPrint function
