@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/acme/autocert"
@@ -32,10 +33,12 @@ func runWithManager(r http.Handler, m *autocert.Manager) {
 	}
 
 	go func() {
-		log.Fatal(http.ListenAndServe(":http", m.HTTPHandler(http.HandlerFunc(redirect))))
+		if err := http.ListenAndServe(":http", m.HTTPHandler(http.HandlerFunc(redirect))); !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("Server listen failed: %v", err)
+		}
 	}()
-	if err := srvTLS.ListenAndServeTLS("", ""); err != nil {
-		log.Fatal(err)
+	if err := srvTLS.ListenAndServeTLS("", ""); !errors.Is(err, http.ErrServerClosed) {
+		log.Fatalf("Server listen failed: %v", err)
 	}
 }
 
@@ -58,8 +61,8 @@ func runTLS(addr string, engine http.Handler, certFile, keyFile string) {
 	if onShutdownFunc != nil {
 		srv.RegisterOnShutdown(onShutdownFunc)
 	}
-	if err := srvTLS.ListenAndServeTLS(certFile, keyFile); err != nil {
-		log.Fatal(err)
+	if err := srvTLS.ListenAndServeTLS(certFile, keyFile); !errors.Is(err, http.ErrServerClosed) {
+		log.Fatalf("Server listen failed: %v", err)
 	}
 }
 
@@ -72,8 +75,8 @@ func run(engine http.Handler, addr ...string) {
 	if onShutdownFunc != nil {
 		srv.RegisterOnShutdown(onShutdownFunc)
 	}
-	if err := srv.ListenAndServe(); err != nil {
-		log.Fatal(err)
+	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		log.Fatalf("Server listen failed: %v", err)
 	}
 }
 
