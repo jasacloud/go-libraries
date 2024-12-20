@@ -69,6 +69,15 @@ func run(engine http.Handler, addr ...string) {
 	}
 }
 
+func onShutdown(f func()) {
+	if srv != nil {
+		srv.RegisterOnShutdown(f)
+	}
+	if srvTLS != nil {
+		srvTLS.RegisterOnShutdown(f)
+	}
+}
+
 func shutdown() {
 	if srv != nil {
 		if err := srv.Shutdown(context.TODO()); err != nil {

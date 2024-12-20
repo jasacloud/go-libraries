@@ -162,6 +162,10 @@ func Start() {
 	}
 }
 
+func OnStop(f func()) {
+	onShutdown(f)
+}
+
 func Stop() {
 	shutdown()
 }
