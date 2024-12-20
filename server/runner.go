@@ -14,6 +14,8 @@ import (
 var (
 	srv    *http.Server
 	srvTLS *http.Server
+
+	onShutdownFunc func()
 )
 
 // runAutoCert support 1-line LetsEncrypt HTTPS servers
@@ -53,6 +55,9 @@ func runTLS(addr string, engine http.Handler, certFile, keyFile string) {
 	debugPrint("Listening and serving HTTPS on %s\n", addr)
 
 	srvTLS = &http.Server{Addr: addr, Handler: engine}
+	if onShutdownFunc != nil {
+		srv.RegisterOnShutdown(onShutdownFunc)
+	}
 	if err := srvTLS.ListenAndServeTLS(certFile, keyFile); err != nil {
 		log.Fatal(err)
 	}
@@ -64,18 +69,16 @@ func run(engine http.Handler, addr ...string) {
 	debugPrint("Listening and serving HTTP on %s\n", address)
 
 	srv = &http.Server{Addr: address, Handler: engine}
+	if onShutdownFunc != nil {
+		srv.RegisterOnShutdown(onShutdownFunc)
+	}
 	if err := srv.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func onShutdown(f func()) {
-	if srv != nil {
-		srv.RegisterOnShutdown(f)
-	}
-	if srvTLS != nil {
-		srvTLS.RegisterOnShutdown(f)
-	}
+	onShutdownFunc = f
 }
 
 func shutdown() {
