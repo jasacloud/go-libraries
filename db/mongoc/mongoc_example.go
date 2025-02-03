@@ -2,9 +2,9 @@ package mongoc
 
 import (
 	"context"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"log"
 )
 
@@ -70,7 +70,6 @@ func (c *Connections) EnsureIndexesTest() ([]string, error) {
 	}
 	indexOptions := options.Index()
 	indexOptions.SetUnique(true)
-	indexOptions.SetBackground(true)
 	indexOptions.SetSparse(true)
 
 	index := mongo.IndexModel{}
@@ -84,7 +83,6 @@ func (c *Connections) EnsureIndexesTest() ([]string, error) {
 	}
 	indexOptions2 := options.Index()
 	indexOptions2.SetUnique(true)
-	indexOptions2.SetBackground(true)
 	indexOptions2.SetSparse(true)
 
 	index2 := mongo.IndexModel{}

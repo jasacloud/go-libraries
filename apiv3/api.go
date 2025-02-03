@@ -24,8 +24,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jasacloud/go-libraries/db"
 	"github.com/jasacloud/go-libraries/helper"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 var once sync.Once
@@ -391,7 +390,7 @@ func ParseInValue(i []interface{}) db.Map {
 		case bool:
 			in = append(in, value)
 		default:
-			var regex primitive.Regex
+			var regex bson.Regex
 			if err := helper.PairValues(value, &regex); err == nil && regex.Pattern != "" {
 				in = append(in, regex)
 			}
@@ -416,7 +415,7 @@ func ParseNotInValue(i []interface{}) db.Map {
 		case bool:
 			in = append(in, value)
 		default:
-			var regex primitive.Regex
+			var regex bson.Regex
 			if err := helper.PairValues(value, &regex); err == nil && regex.Pattern != "" {
 				in = append(in, regex)
 			}
@@ -441,7 +440,7 @@ func ParseAllValue(i []interface{}) db.Map {
 		case bool:
 			all = append(all, value)
 		default:
-			var regex primitive.Regex
+			var regex bson.Regex
 			if err := helper.PairValues(value, &regex); err == nil && regex.Pattern != "" {
 				all = append(all, regex)
 			}

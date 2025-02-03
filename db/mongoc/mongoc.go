@@ -18,10 +18,10 @@ import (
 	"errors"
 	"github.com/jasacloud/go-libraries/config"
 	"github.com/jasacloud/go-libraries/utils/masker"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/x/mongo/driver/connstring"
 	"log"
 	"strings"
 	"sync"
@@ -160,7 +160,7 @@ func connectURI(uri string) (*Connections, error) {
 	//clientOptions.Auth.AuthSource = ""
 
 	// connect to MongoDB
-	client, err := mongo.Connect(context.TODO(), clientOptions)
+	client, err := mongo.Connect(clientOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -292,8 +292,17 @@ func (c *Connections) EnsureIndexes(indexes ...mongo.IndexModel) ([]string, erro
 
 // CreateIndex method
 func (c *Connections) CreateIndex(index *Index) (string, error) {
+	if index.CreateIndexesOptions != nil && index.CreateIndexesOptions.CommitQuorum != nil {
+		opts := options.CreateIndexes()
+		opts.Opts = append(opts.Opts, func(opts *options.CreateIndexesOptions) error {
+			opts.CommitQuorum = index.CreateIndexesOptions.CommitQuorum
 
-	return c.Collection.Indexes().CreateOne(context.TODO(), index.IndexModel, index.CreateIndexesOptions)
+			return nil
+		})
+		return c.Collection.Indexes().CreateOne(context.TODO(), index.IndexModel, opts)
+	}
+
+	return c.Collection.Indexes().CreateOne(context.TODO(), index.IndexModel)
 }
 
 // CreateIndexes method
@@ -305,7 +314,17 @@ func (c *Connections) CreateIndexes(index ...*Index) ([]string, error) {
 		sliceOpts = append(sliceOpts, v.CreateIndexesOptions)
 	}
 
-	return c.Collection.Indexes().CreateMany(context.TODO(), sliceIndex, sliceOpts...)
+	opts := options.CreateIndexes()
+	for _, opt := range sliceOpts {
+		if opt.CommitQuorum != nil {
+			opts.Opts = append(opts.Opts, func(opts *options.CreateIndexesOptions) error {
+				opts.CommitQuorum = opt.CommitQuorum
+				return nil
+			})
+		}
+	}
+
+	return c.Collection.Indexes().CreateMany(context.TODO(), sliceIndex, opts)
 }
 
 // NewIndex function
@@ -333,19 +352,6 @@ func (i *Index) SetUnique(unique bool) *Index {
 	}
 	i.IndexModel.Options = options.Index()
 	i.IndexModel.Options.SetUnique(unique)
-
-	return i
-}
-
-// SetBackground method
-func (i *Index) SetBackground(background bool) *Index {
-	if i.IndexModel.Options != nil {
-		i.IndexModel.Options.SetBackground(background)
-
-		return i
-	}
-	i.IndexModel.Options = options.Index()
-	i.IndexModel.Options.SetBackground(background)
 
 	return i
 }
@@ -386,7 +392,6 @@ func yieldIndexModel() mongo.IndexModel {
 	indexOptions := options.Index()
 	indexOptions.SetUnique(true)
 	indexOptions.SetName("_name_1_type_1_parent_1_")
-	indexOptions.SetBackground(true)
 	indexOptions.SetSparse(true)
 
 	index := mongo.IndexModel{}
