@@ -28,6 +28,7 @@ type SessionOption struct {
 	Type          string `json:"type" bson:"type"`
 	Host          string `json:"host" bson:"host"`
 	Secret        string `json:"secret" bson:"secret"`
+	Username      string `json:"username" bson:"username"`
 	Password      string `json:"password" bson:"password"`
 	ExpirationSec int    `json:"expiration" bson:"expiration"`
 	SessionName   string `json:"sessionName" bson:"sessionName"`
@@ -68,7 +69,7 @@ func GetSessionStore(option SessionOption) sessions.Store {
 
 		return store
 	case "redis":
-		store, _ := redis.NewStore(10, "tcp", option.Host, option.Password, []byte(option.Secret))
+		store, _ := redis.NewStore(10, "tcp", option.Host, option.Username, option.Password, []byte(option.Secret))
 
 		return store
 	default:
