@@ -684,26 +684,12 @@ func ParseSearchQuery(params Params, required ...bool) (db.Map, error) {
 	q := db.Map{}
 	parsed := 0
 
-	//parse query::match clause :
-	queryMatchParsed, err := GetQueryMatchParams(params.Query.Match, q)
-	if err != nil {
-		return nil, err
-	}
-	parsed = parsed + queryMatchParsed
-
 	//parse query::like clause :
 	queryLikeParsed, err := GetQueryLikeParams(params.Query.Like, q)
 	if err != nil {
 		return nil, err
 	}
 	parsed = parsed + queryLikeParsed
-
-	//parse query::elemMatch clause :
-	queryElemMatchParsed, err := GetQueryElemMatchParams(params.Query.ElemMatch, q)
-	if err != nil {
-		return nil, err
-	}
-	parsed = parsed + queryElemMatchParsed
 
 	//parse filter::range clause :
 	filterRangeParsed, err := GetFilterRangeParams(params.Filter.Range, q)
@@ -753,6 +739,20 @@ func ParseSearchQuery(params Params, required ...bool) (db.Map, error) {
 		return nil, err
 	}
 	parsed = parsed + filterGeoWithinParsed
+
+	//parse query::elemMatch clause :
+	queryElemMatchParsed, err := GetQueryElemMatchParams(params.Query.ElemMatch, q)
+	if err != nil {
+		return nil, err
+	}
+	parsed = parsed + queryElemMatchParsed
+
+	//parse query::match clause :
+	queryMatchParsed, err := GetQueryMatchParams(params.Query.Match, q)
+	if err != nil {
+		return nil, err
+	}
+	parsed = parsed + queryMatchParsed
 
 	//parse custom_query :
 	if params.CustomQuery != nil {
