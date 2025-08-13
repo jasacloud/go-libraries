@@ -59,8 +59,8 @@ func (slc *svcLifecycle) Readyz() http.HandlerFunc {
 func LoadDefaultLifecycle() {
 	if Route != nil {
 		lifecycle := NewSvcLifecycle().SetDuration(5 * time.Second).Init()
-		Route.Any("/healthz", gin.WrapF(lifecycle.Healthz))
-		Route.Any("/readyz", gin.WrapH(lifecycle.Readyz()))
+		Route.GET("/healthz", gin.WrapF(lifecycle.Healthz))
+		Route.GET("/readyz", gin.WrapH(lifecycle.Readyz()))
 		return
 	}
 	log.Fatal("server route not loaded, please init load server first")
