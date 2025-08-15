@@ -61,6 +61,12 @@ func GetCurDateTimeZ() string {
 	return time.Now().UTC().Format(UTCDateLayout)
 }
 
+// GetDateTimeZ function
+func GetDateTimeZ(t time.Time) string {
+
+	return t.UTC().Format(UTCDateLayout)
+}
+
 // ParseDateTimeZ function
 func ParseDateTimeZ(value string) (time.Time, error) {
 
