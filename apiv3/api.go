@@ -393,6 +393,8 @@ func ParseInValue(i []interface{}) db.Map {
 			var regex bson.Regex
 			if err := helper.PairValues(value, &regex); err == nil && regex.Pattern != "" {
 				in = append(in, regex)
+			} else if value == nil {
+				in = append(in, value)
 			}
 		}
 	}
@@ -418,6 +420,8 @@ func ParseNotInValue(i []interface{}) db.Map {
 			var regex bson.Regex
 			if err := helper.PairValues(value, &regex); err == nil && regex.Pattern != "" {
 				in = append(in, regex)
+			} else if value == nil {
+				in = append(in, value)
 			}
 		}
 	}
