@@ -1094,6 +1094,24 @@ func (a Attributes) ParseKeyValSetAttributes() Attributes {
 	return nil
 }
 
+// ToMapStringInterface method
+func (a Attributes) ToMapStringInterface() map[string]interface{} {
+	if a != nil {
+		return a
+	}
+
+	return nil
+}
+
+// ToMapStringAny method
+func (a Attributes) ToMapStringAny() map[string]any {
+	if a != nil {
+		return a
+	}
+
+	return nil
+}
+
 // PairTo method
 func (a *Attributes) PairTo(o interface{}) error {
 	return helper.PairValues(a, o)
