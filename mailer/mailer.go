@@ -252,15 +252,15 @@ func (mailer *Mailer) SendWithAttachments(to string, cc string, subject string, 
 	return gomail.Send(mailer.s, mailer.m)
 }
 
-// SendWithAttachments method
-func (mailer *Mailer) SendWithAttachmentsEmbeds(to string, cc string, subject string, contentType string, content string, attachments []Attachment, embeds []Embed) error {
+// SendWithAttachmentsEmbeds method
+func (mailer *Mailer) SendWithAttachmentsEmbeds(to string, cc string, subject string, contentType string, content string, attachments []Attachment, embeds []Embed, header ...map[string]string) error {
 	m := gomail.NewMessage(mailer.getMessageSettings()...)
 	m.SetHeader("Message-ID", getMessageId(mailer.opt.Sender))
 	m.SetHeader("To", to)
 	if cc != "" {
 		m.SetHeader("Cc", cc)
 	}
-	//m.SetHeader("From", "dwi@jasacloud.com")
+
 	//m.SetHeader("From", mailer.opt.Sender)
 	m.SetAddressHeader("From", mailer.opt.Sender, mailer.opt.SenderName)
 	m.SetHeader("Subject", subject)
@@ -269,6 +269,13 @@ func (mailer *Mailer) SendWithAttachmentsEmbeds(to string, cc string, subject st
 	m.SetHeader("X-MSMail-Priority", "High")
 	m.SetHeader("Importance", "High")
 	m.SetHeader("Mime-Version", "1.0")
+
+	for _, h := range header {
+		for k, v := range h {
+			m.SetHeader(k, v)
+		}
+	}
+
 	m.SetBody(contentType, content)
 
 	mailer.m = m
