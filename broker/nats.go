@@ -73,28 +73,46 @@ func NatsConnect(resourceName string) *nats.Conn {
 
 // setupConnOptions function
 func setupConnOptions(opt NatsOption) []nats.Option {
-	opts := []nats.Option{nats.Name("NATS")}
-	totalWait := time.Duration(opt.MaxReconnectSec) * time.Second
-	reconnectDelay := time.Duration(opt.ReconnectDelaySec) * time.Second
+	opts := []nats.Option{
+		nats.Name("NATS-Client"),
+		nats.Timeout(5 * time.Second), // Good practice: prevent hanging on initial startup
+	}
 
+	// Default delays if not provided or set to 0
+	reconnectDelay := time.Duration(opt.ReconnectDelaySec) * time.Second
+	if reconnectDelay <= 0 {
+		reconnectDelay = 1 * time.Second // Fallback to 1s delay
+	}
 	opts = append(opts, nats.ReconnectWait(reconnectDelay))
+
+	// Handle Max Reconnects safely
 	if opt.MaxReconnect != nil {
 		opts = append(opts, nats.MaxReconnects(*opt.MaxReconnect))
-	} else {
-		opts = append(opts, nats.MaxReconnects(int(totalWait/reconnectDelay)))
+	} else if opt.MaxReconnectSec > 0 {
+		totalWait := time.Duration(opt.MaxReconnectSec) * time.Second
+		maxAttempts := int(totalWait / reconnectDelay)
+		if maxAttempts < 1 {
+			maxAttempts = 1
+		}
+		opts = append(opts, nats.MaxReconnects(maxAttempts))
 	}
+
+	// Logging Handlers
 	opts = append(opts, nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
 		if err != nil {
-			log.Printf("Disconnected: with error (%v), will attempt reconnects for %.0fm", err, totalWait.Minutes())
+			log.Printf("Disconnected: with error (%v)", err)
 			return
 		}
-		log.Printf("Disconnected: will attempt reconnects for %.0fm", totalWait.Minutes())
+		log.Println("Disconnected from NATS cluster")
 	}))
+
 	opts = append(opts, nats.ReconnectHandler(func(nc *nats.Conn) {
-		log.Printf("Reconnected [%s]", nc.ConnectedUrl())
+		log.Printf("Reconnected to [%s]", nc.ConnectedUrl())
 	}))
+
 	opts = append(opts, nats.ClosedHandler(func(nc *nats.Conn) {
-		log.Fatal("Exiting, no servers available")
+		log.Fatal("Connection closed permanently, exiting...")
 	}))
+
 	return opts
 }
