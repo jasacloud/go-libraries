@@ -31,6 +31,7 @@ type NatsOption struct {
 	Name              string `json:"name" bson:"name"`
 	ConnString        string `json:"connString" bson:"connString"`
 	MaxReconnectSec   int    `json:"maxReconnectSec" bson:"maxReconnectSec"`
+	MaxReconnect      *int   `json:"maxReconnect,omitempty" bson:"maxReconnect,omitempty"`
 	ReconnectDelaySec int    `json:"reconnectDelaySec" bson:"reconnectDelaySec"`
 }
 
@@ -77,8 +78,16 @@ func setupConnOptions(opt NatsOption) []nats.Option {
 	reconnectDelay := time.Duration(opt.ReconnectDelaySec) * time.Second
 
 	opts = append(opts, nats.ReconnectWait(reconnectDelay))
-	opts = append(opts, nats.MaxReconnects(int(totalWait/reconnectDelay)))
-	opts = append(opts, nats.DisconnectHandler(func(nc *nats.Conn) {
+	if opt.MaxReconnect != nil {
+		opts = append(opts, nats.MaxReconnects(*opt.MaxReconnect))
+	} else {
+		opts = append(opts, nats.MaxReconnects(int(totalWait/reconnectDelay)))
+	}
+	opts = append(opts, nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
+		if err != nil {
+			log.Printf("Disconnected: with error (%v), will attempt reconnects for %.0fm", err, totalWait.Minutes())
+			return
+		}
 		log.Printf("Disconnected: will attempt reconnects for %.0fm", totalWait.Minutes())
 	}))
 	opts = append(opts, nats.ReconnectHandler(func(nc *nats.Conn) {
